@@ -15,6 +15,8 @@ pub fn run() {
             commands::validate_path,
             commands::get_current_platform,
             commands::get_installed_apps,
+            commands::get_storage_dir,
+            commands::set_storage_dir,
             commands::get_autostart,
             commands::set_autostart,
         ])

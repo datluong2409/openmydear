@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Modal } from "../common/Modal";
-import { getAutostart, setAutostart } from "../../commands";
+import { Button } from "../common/Button";
+import { getAutostart, setAutostart, getStorageDir, setStorageDir } from "../../commands";
 import type { Locale } from "../../i18n/I18nContext";
 
 interface SettingsProps {
@@ -13,10 +15,18 @@ export function Settings({ open, onClose }: SettingsProps) {
   const { t, locale, setLocale } = useTranslation();
   const [autostart, setAutostartState] = useState(false);
   const [autostartLoading, setAutostartLoading] = useState(false);
+  const [storageDir, setStorageDirState] = useState("");
+  const [defaultStorageDir, setDefaultStorageDirState] = useState("");
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     getAutostart().then(setAutostartState).catch(() => {});
+    getStorageDir().then((dir) => {
+      setStorageDirState(dir);
+      if (!defaultStorageDir) setDefaultStorageDirState(dir);
+    }).catch(() => {});
   }, [open]);
 
   const handleAutostartChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,9 +42,41 @@ export function Settings({ open, onClose }: SettingsProps) {
     }
   };
 
+  const handleStorageBrowse = async () => {
+    try {
+      const selected = await dialogOpen({ directory: true, multiple: false });
+      if (!selected) return;
+      const newDir = selected as string;
+      setStorageLoading(true);
+      setStorageError("");
+      await setStorageDir(newDir);
+      setStorageDirState(newDir);
+    } catch (err) {
+      setStorageError(t("settings.storageMoveFailed"));
+    } finally {
+      setStorageLoading(false);
+    }
+  };
+
+  const handleStorageReset = async () => {
+    if (!defaultStorageDir) return;
+    setStorageLoading(true);
+    setStorageError("");
+    try {
+      await setStorageDir(defaultStorageDir);
+      setStorageDirState(defaultStorageDir);
+    } catch (err) {
+      setStorageError(t("settings.storageMoveFailed"));
+    } finally {
+      setStorageLoading(false);
+    }
+  };
+
+  const isCustomStorage = storageDir !== defaultStorageDir && defaultStorageDir !== "";
+
   return (
     <Modal open={open} onClose={onClose} title={t("settings.title")}>
-      <div className="flex flex-col gap-5" style={{ minWidth: 320 }}>
+      <div className="flex flex-col gap-5" style={{ minWidth: 340 }}>
 
         {/* General section */}
         <div className="flex flex-col gap-2">
@@ -71,6 +113,59 @@ export function Settings({ open, onClose }: SettingsProps) {
               />
               <span className="settings-toggle-track absolute inset-0 rounded-[22px] cursor-pointer transition-colors" />
             </label>
+          </div>
+        </div>
+
+        {/* Storage section */}
+        <div className="flex flex-col gap-2">
+          <div
+            className="text-[11px] font-bold uppercase tracking-[0.6px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            {t("settings.storage")}
+          </div>
+          <div
+            className="flex flex-col gap-3 px-[14px] py-3"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
+            <div className="flex flex-col gap-[2px]">
+              <span className="text-[13px] font-medium">{t("settings.storageLocation")}</span>
+              <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                {t("settings.storageLocationDesc")}
+              </span>
+            </div>
+            <div
+              className="text-[11px] px-2 py-[6px] overflow-hidden text-ellipsis whitespace-nowrap"
+              style={{
+                background: "var(--color-bg-secondary)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--color-text-secondary)",
+                fontFamily: "monospace",
+              }}
+              title={storageDir}
+            >
+              {storageDir ? `${storageDir}${storageDir.includes("\\") ? "\\" : "/"}profiles.json` : "…"}
+            </div>
+            {storageError && (
+              <span className="text-[11px]" style={{ color: "var(--color-danger)" }}>
+                {storageError}
+              </span>
+            )}
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" onClick={handleStorageBrowse} disabled={storageLoading}>
+                {t("settings.storageBrowse")}
+              </Button>
+              {isCustomStorage && (
+                <Button variant="ghost" size="sm" onClick={handleStorageReset} disabled={storageLoading}>
+                  {t("settings.storageReset")}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

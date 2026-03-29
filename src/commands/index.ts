@@ -34,6 +34,14 @@ export async function getInstalledApps(): Promise<AppInfo[]> {
   return invoke<AppInfo[]>("get_installed_apps");
 }
 
+export async function getStorageDir(): Promise<string> {
+  return invoke<string>("get_storage_dir");
+}
+
+export async function setStorageDir(path: string): Promise<void> {
+  return invoke("set_storage_dir", { path });
+}
+
 export async function getAutostart(): Promise<boolean> {
   return invoke<boolean>("get_autostart");
 }

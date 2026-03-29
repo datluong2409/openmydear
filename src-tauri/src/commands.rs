@@ -399,6 +399,16 @@ const AUTOSTART_KEY: &str = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\
 const AUTOSTART_NAME: &str = "OpenMyDear";
 
 #[tauri::command]
+pub fn get_storage_dir(app: AppHandle) -> Result<String, String> {
+    storage::get_storage_dir(&app)
+}
+
+#[tauri::command]
+pub fn set_storage_dir(app: AppHandle, path: String) -> Result<(), String> {
+    storage::set_storage_dir(&app, &path)
+}
+
+#[tauri::command]
 pub fn get_autostart() -> bool {
     #[cfg(target_os = "windows")]
     {

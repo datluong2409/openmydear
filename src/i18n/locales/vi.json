@@ -63,5 +63,11 @@
   "settings.general": "Chung",
   "settings.autostart": "Khởi động cùng Windows",
   "settings.autostartDesc": "Mở OpenMyDear khi Windows khởi động",
-  "settings.displayLanguage": "Ngôn ngữ hiển thị"
+  "settings.displayLanguage": "Ngôn ngữ hiển thị",
+  "settings.storage": "Lưu trữ",
+  "settings.storageLocation": "Vị trí lưu trữ",
+  "settings.storageLocationDesc": "Thư mục chứa tệp profiles.json",
+  "settings.storageBrowse": "Thay đổi...",
+  "settings.storageReset": "Về mặc định",
+  "settings.storageMoveFailed": "Không thể di chuyển dữ liệu"
 }

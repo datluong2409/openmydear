@@ -63,5 +63,11 @@
   "settings.general": "General",
   "settings.autostart": "Launch on startup",
   "settings.autostartDesc": "Open OpenMyDear when Windows starts",
-  "settings.displayLanguage": "Display language"
+  "settings.displayLanguage": "Display language",
+  "settings.storage": "Storage",
+  "settings.storageLocation": "Storage location",
+  "settings.storageLocationDesc": "Folder where profiles.json is saved",
+  "settings.storageBrowse": "Change...",
+  "settings.storageReset": "Reset to default",
+  "settings.storageMoveFailed": "Failed to move storage"
 }

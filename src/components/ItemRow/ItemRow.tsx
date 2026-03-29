@@ -120,6 +120,7 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
           >
             &#x25B6;
           </button>
+          {item.type !== "app" && (
           <button
             className="w-[26px] h-[26px] flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] cursor-pointer transition-colors"
             style={{ color: "var(--color-text-secondary)" }}
@@ -130,6 +131,7 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
           >
             &#9998;
           </button>
+          )}
           <button
             className="w-[26px] h-[26px] flex items-center justify-center rounded-[var(--radius-sm)] cursor-pointer transition-colors"
             style={{ color: "var(--color-danger)" }}
