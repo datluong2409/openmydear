@@ -22,16 +22,13 @@ import { Button } from "../common/Button";
 import { ItemRow } from "../ItemRow/ItemRow";
 import { AddItemDialog } from "../AddItemDialog/AddItemDialog";
 import { OpenWithPicker } from "../OpenWithPicker/OpenWithPicker";
-import { RunResultDialog } from "../RunResultDialog/RunResultDialog";
-import type { LaunchItem, ItemType, RunResult, AppInfo } from "../../types";
+import type { LaunchItem, ItemType, AppInfo } from "../../types";
 
 export function ProfileDetail() {
   const { selectedProfile, dispatch } = useProfiles();
   const { t } = useTranslation();
 
   const [isRunning, setIsRunning] = useState(false);
-  const [runResult, setRunResult] = useState<RunResult | null>(null);
-  const [showRunResult, setShowRunResult] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editItem, setEditItem] = useState<LaunchItem | null>(null);
   const [showOpenWithPicker, setShowOpenWithPicker] = useState(false);
@@ -57,12 +54,9 @@ export function ProfileDetail() {
     if (!profile) return;
     setIsRunning(true);
     try {
-      const result = await runProfile(profile.id);
-      setRunResult(result);
-      setShowRunResult(true);
+      await runProfile(profile.id);
     } catch (err) {
-      setRunResult({ total: 0, succeeded: 0, errors: [{ item_id: "", label: "System", error: String(err) }] });
-      setShowRunResult(true);
+      console.error("Run failed:", err);
     } finally {
       setIsRunning(false);
     }
@@ -95,7 +89,7 @@ export function ProfileDetail() {
     if (!ctx) return;
     if (ctx.mode === "add-app") {
       if (app) {
-        dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: "app", label: app.name, path: app.path, platform: "both" } });
+        dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: "app", label: app.name, path: app.path, platform: "both", icon: app.icon } });
       }
     } else if (ctx.mode === "add") {
       dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: ctx.type, label: ctx.label, path: ctx.path, platform: "both", openWith: app?.path, openWithName: app?.name, openWithIcon: app?.icon } });
@@ -177,7 +171,6 @@ export function ProfileDetail() {
 
       <AddItemDialog open={showEditDialog} onClose={() => { setShowEditDialog(false); setEditItem(null); }} onSave={handleSaveItem} editItem={editItem} />
       <OpenWithPicker open={showOpenWithPicker} onSelect={handleOpenWithSelect} onCancel={handleOpenWithCancel} mode={pickerContextRef.current?.mode === "add-app" ? "addApp" : "openWith"} />
-      <RunResultDialog open={showRunResult} onClose={() => setShowRunResult(false)} result={runResult} />
     </div>
   );
 }

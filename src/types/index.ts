@@ -7,6 +7,7 @@ export interface LaunchItem {
   label: string;
   path: string;
   platform: Platform;
+  icon?: string;
   openWith?: string;
   openWithName?: string;
   openWithIcon?: string;

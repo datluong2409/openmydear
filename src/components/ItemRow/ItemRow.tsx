@@ -65,7 +65,11 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
         >
           &#x2630;
         </div>
-        <span className="text-[18px] shrink-0">{TYPE_ICONS[item.type] || "?"}</span>
+        {item.icon ? (
+          <img src={`data:image/png;base64,${item.icon}`} alt={item.label} width={20} height={20} className="shrink-0 rounded-[2px] object-contain" />
+        ) : (
+          <span className="text-[18px] shrink-0">{TYPE_ICONS[item.type] || "?"}</span>
+        )}
         <div className="flex-1 min-w-0">
           <div className="font-medium text-[13px] overflow-hidden text-ellipsis whitespace-nowrap">
             {item.label}

@@ -24,6 +24,8 @@ pub struct LaunchItem {
     pub label: String,
     pub path: String,
     pub platform: Platform,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
     #[serde(rename = "openWith", default, skip_serializing_if = "Option::is_none")]
     pub open_with: Option<String>,
     #[serde(
