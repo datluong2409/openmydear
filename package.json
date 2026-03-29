@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:app": "npx tauri dev",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
+    "tauri": "npx tauri",
     "build:tauri": "npx tauri build"
   },
   "dependencies": {
