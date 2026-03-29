@@ -46,7 +46,8 @@
       "Bash(cmd /c \"call \"\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Community\\\\VC\\\\Auxiliary\\\\Build\\\\vcvarsall.bat\"\" x64 && set \"\"PATH=C:\\\\Users\\\\dat.luong\\\\.cargo\\\\bin;%PATH%\"\" && cargo check 2>&1\")",
       "Bash(C:/Users/dat.luong/.cargo/bin/cargo check:*)",
       "Bash(file src-tauri/icons/*.png)",
-      "Bash(ls -la /d/PROJECTS/OpenMyDear/src-tauri/target/release/*.exe)"
+      "Bash(ls -la /d/PROJECTS/OpenMyDear/src-tauri/target/release/*.exe)",
+      "Bash(du -sh /d/PROJECTS/OpenMyDear/src-tauri/target/*/)"
     ]
   }
 }
