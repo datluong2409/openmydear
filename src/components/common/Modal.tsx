@@ -3,21 +3,26 @@ import { useEffect, useRef, type ReactNode } from "react";
 interface ModalProps {
   open: boolean;
   onClose: () => void;
+  onConfirm?: () => void;
   title: string;
   children: ReactNode;
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, onConfirm, title, children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "Enter" && onConfirm) {
+        e.preventDefault();
+        onConfirm();
+      }
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  }, [open, onClose, onConfirm]);
 
   if (!open) return null;
 

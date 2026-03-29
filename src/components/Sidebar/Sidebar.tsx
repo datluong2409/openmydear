@@ -222,7 +222,7 @@ export function Sidebar() {
       <Settings open={showSettings} onClose={() => setShowSettings(false)} />
 
       {pendingDeleteId && (
-        <Modal open={!!pendingDeleteId} onClose={cancelDelete} title={t("profile.delete")}>
+        <Modal open={!!pendingDeleteId} onClose={cancelDelete} onConfirm={confirmDelete} title={t("profile.delete")}>
           <p>{t("profile.deleteConfirm", { name: pendingProfile?.name ?? "" })}</p>
           <div className="flex gap-2 justify-end mt-4">
             <Button variant="secondary" size="sm" onClick={cancelDelete}>
