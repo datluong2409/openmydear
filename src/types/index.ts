@@ -8,6 +8,8 @@ export interface LaunchItem {
   path: string;
   platform: Platform;
   openWith?: string;
+  openWithName?: string;
+  openWithIcon?: string;
 }
 
 export interface LaunchProfile {

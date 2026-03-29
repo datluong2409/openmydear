@@ -22,6 +22,8 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
   const [path, setPath] = useState("");
   const [itemType, setItemType] = useState<ItemType>("app");
   const [openWith, setOpenWith] = useState<string | undefined>(undefined);
+  const [openWithName, setOpenWithName] = useState<string | undefined>(undefined);
+  const [openWithIcon, setOpenWithIcon] = useState<string | undefined>(undefined);
   const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
       setPath(editItem.path);
       setItemType(editItem.type);
       setOpenWith(editItem.openWith);
+      setOpenWithName(editItem.openWithName);
+      setOpenWithIcon(editItem.openWithIcon);
     }
   }, [editItem, isOpen]);
 
@@ -50,14 +54,10 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
     } catch (err) { console.error("Browse failed:", err); }
   };
 
-  const openWithName = openWith
-    ? openWith.split(/[/\\]/).pop()?.replace(/\.\w+$/, "") || openWith
-    : null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editItem || !label.trim() || !path.trim()) return;
-    onSave({ ...editItem, type: itemType, label: label.trim(), path: path.trim(), openWith });
+    onSave({ ...editItem, type: itemType, label: label.trim(), path: path.trim(), openWith, openWithName, openWithIcon });
     onClose();
   };
 
@@ -139,7 +139,7 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="flex-1 px-[10px] py-2 text-[13px] text-left cursor-pointer transition-colors"
+                  className="flex-1 px-[10px] py-2 text-[13px] text-left cursor-pointer transition-colors flex items-center gap-2"
                   style={{
                     borderRadius: "var(--radius-sm)",
                     border: openWithName ? `1px solid var(--color-primary)` : `1px dashed var(--color-border)`,
@@ -158,10 +158,13 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
                   }}
                   onClick={() => setShowPicker(true)}
                 >
+                  {openWithIcon && (
+                    <img src={`data:image/png;base64,${openWithIcon}`} alt={openWithName} width={16} height={16} className="shrink-0 rounded-[2px] object-contain" />
+                  )}
                   {openWithName ?? t("item.openWithDefault")}
                 </button>
                 {openWithName && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setOpenWith(undefined)}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setOpenWith(undefined); setOpenWithName(undefined); setOpenWithIcon(undefined); }}>
                     {t("item.openWithClear")}
                   </Button>
                 )}
@@ -178,7 +181,7 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
 
       <OpenWithPicker
         open={showPicker}
-        onSelect={(appPath) => { setOpenWith(appPath); setShowPicker(false); }}
+        onSelect={(app) => { setOpenWith(app?.path); setOpenWithName(app?.name); setOpenWithIcon(app?.icon); setShowPicker(false); }}
         onCancel={() => setShowPicker(false)}
       />
     </>

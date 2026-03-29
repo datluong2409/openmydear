@@ -8,7 +8,7 @@ import type { AppInfo } from "../../types";
 
 interface OpenWithPickerProps {
   open: boolean;
-  onSelect: (appPath: string | undefined) => void;
+  onSelect: (app: AppInfo | undefined) => void;
   onCancel: () => void;
 }
 
@@ -38,7 +38,7 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPic
         title: t("picker.browse"),
         filters: [{ name: "Applications", extensions: ["exe", "lnk"] }],
       });
-      if (selected) onSelect(selected as string);
+      if (selected) onSelect({ name: (selected as string).split(/[/\\]/).pop()?.replace(/\.\w+$/, "") || (selected as string), path: selected as string });
     } catch (err) {
       console.error("Browse failed:", err);
     }
@@ -120,7 +120,7 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPic
                   borderRadius: "var(--radius-sm)",
                   background: hoveredIndex === i ? "var(--color-bg-hover)" : "transparent",
                 }}
-                onClick={() => onSelect(app.path)}
+                onClick={() => onSelect(app)}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 title={app.path}

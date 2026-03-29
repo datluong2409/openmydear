@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { usePlatform } from "../../hooks/usePlatform";
@@ -41,9 +42,8 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
   const cancelDelete = () => setShowDeleteConfirm(false);
   const handleOpen = async () => { try { await runItem(item.path, item.openWith); } catch (err) { alert(String(err)); } };
 
-  const openWithName = item.openWith
-    ? item.openWith.split(/[/\\]/).pop()?.replace(/\.\w+$/, "") || item.openWith
-    : null;
+  const openWithName = item.openWithName
+    ?? (item.openWith ? item.openWith.split(/[/\\]/).pop()?.replace(/\.\w+$/, "") || item.openWith : null);
 
   return (
     <>
@@ -84,29 +84,28 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
           <button
             className="text-[10px] px-2 py-[2px] rounded-[10px] font-medium shrink-0 cursor-pointer flex items-center gap-1 transition-all"
             style={{
-              background: openWithName ? "var(--color-primary)" : "var(--color-bg-hover)",
-              color: openWithName ? "white" : "var(--color-text-muted)",
+              background: "transparent",
+              color: openWithName ? "var(--color-primary)" : "var(--color-text-muted)",
               border: "1px solid transparent",
             }}
             onMouseEnter={(e) => {
-              if (openWithName) { e.currentTarget.style.opacity = "0.9"; }
-              else {
-                e.currentTarget.style.borderColor = "var(--color-border)";
-                e.currentTarget.style.color = "var(--color-text-secondary)";
-              }
+              e.currentTarget.style.borderColor = "var(--color-border)";
+              e.currentTarget.style.color = openWithName ? "var(--color-primary)" : "var(--color-text-secondary)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "1";
               e.currentTarget.style.borderColor = "transparent";
-              e.currentTarget.style.color = openWithName ? "white" : "var(--color-text-muted)";
+              e.currentTarget.style.color = openWithName ? "var(--color-primary)" : "var(--color-text-muted)";
             }}
             onClick={() => onChangeOpenWith(item)}
             title={openWithName ? `${t("item.openWith")}: ${item.openWith}` : t("item.openWithChange")}
           >
+            {item.openWithIcon && (
+              <img src={`data:image/png;base64,${item.openWithIcon}`} alt={openWithName ?? ""} width={12} height={12} className="shrink-0 rounded-[2px] object-contain" style={{ opacity: 0.9 }} />
+            )}
             {openWithName || t("item.openWithDefault")}
           </button>
         )}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 max-w-0 overflow-hidden group-hover:max-w-[100px] transition-all duration-200">
           <button
             className="w-[26px] h-[26px] flex items-center justify-center rounded-[var(--radius-sm)] text-[11px] cursor-pointer transition-colors"
             style={{ color: "var(--color-primary)" }}
@@ -128,14 +127,14 @@ export function ItemRow({ item, onEdit, onDelete, onChangeOpenWith }: ItemRowPro
             &#9998;
           </button>
           <button
-            className="w-[26px] h-[26px] flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] cursor-pointer transition-colors"
-            style={{ color: "var(--color-text-secondary)" }}
+            className="w-[26px] h-[26px] flex items-center justify-center rounded-[var(--radius-sm)] cursor-pointer transition-colors"
+            style={{ color: "var(--color-danger)" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-danger)"; e.currentTarget.style.color = "white"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--color-danger)"; }}
             onClick={handleDelete}
             title={t("item.delete")}
           >
-            &times;
+            <Trash2 size={13} />
           </button>
         </div>
       </div>

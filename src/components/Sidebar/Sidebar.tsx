@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { nanoid } from "nanoid";
+import { Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -94,20 +95,20 @@ function SortableProfileItem({
         {profile.items.length}
       </span>
       <button
-        className="hidden w-5 h-5 items-center justify-center text-[15px] rounded-[var(--radius-sm)] cursor-pointer shrink-0 group-hover:flex"
-        style={{ color: "var(--color-text-muted)" }}
+        className="hidden w-5 h-5 items-center justify-center rounded-[var(--radius-sm)] cursor-pointer shrink-0 group-hover:flex"
+        style={{ color: "var(--color-danger)" }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "var(--color-danger)";
           e.currentTarget.style.color = "white";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = "";
-          e.currentTarget.style.color = "var(--color-text-muted)";
+          e.currentTarget.style.color = "var(--color-danger)";
         }}
         onClick={(e) => onDeleteClick(e, profile.id)}
         title={deleteLabel}
       >
-        &times;
+        <Trash2 size={12} />
       </button>
     </div>
   );

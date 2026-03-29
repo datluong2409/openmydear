@@ -24,7 +24,7 @@ import { ItemRow } from "../ItemRow/ItemRow";
 import { AddItemDialog } from "../AddItemDialog/AddItemDialog";
 import { OpenWithPicker } from "../OpenWithPicker/OpenWithPicker";
 import { RunResultDialog } from "../RunResultDialog/RunResultDialog";
-import type { LaunchItem, ItemType, RunResult } from "../../types";
+import type { LaunchItem, ItemType, RunResult, AppInfo } from "../../types";
 
 export function ProfileDetail() {
   const { selectedProfile, dispatch } = useProfiles();
@@ -93,14 +93,14 @@ export function ProfileDetail() {
     } catch (err) { console.error("Browse failed:", err); }
   };
 
-  const handleOpenWithSelect = (appPath: string | undefined) => {
+  const handleOpenWithSelect = (app: AppInfo | undefined) => {
     if (!profile) return;
     const ctx = pickerContextRef.current;
     if (!ctx) return;
     if (ctx.mode === "add") {
-      dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: ctx.type, label: ctx.label, path: ctx.path, platform: "both", openWith: appPath } });
+      dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: ctx.type, label: ctx.label, path: ctx.path, platform: "both", openWith: app?.path, openWithName: app?.name, openWithIcon: app?.icon } });
     } else {
-      dispatch({ type: "UPDATE_ITEM", profileId: profile.id, item: { ...ctx.item, openWith: appPath } });
+      dispatch({ type: "UPDATE_ITEM", profileId: profile.id, item: { ...ctx.item, openWith: app?.path, openWithName: app?.name, openWithIcon: app?.icon } });
     }
     pickerContextRef.current = null;
     setShowOpenWithPicker(false);

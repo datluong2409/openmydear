@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
 use tauri::AppHandle;
@@ -119,6 +118,7 @@ pub fn get_installed_apps() -> Vec<AppInfo> {
 
 #[cfg(target_os = "windows")]
 fn list_installed_apps() -> Vec<AppInfo> {
+    use std::collections::HashSet;
     use std::os::windows::process::CommandExt;
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -328,7 +328,7 @@ pub fn get_autostart() -> bool {
 }
 
 #[tauri::command]
-pub fn set_autostart(_app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
