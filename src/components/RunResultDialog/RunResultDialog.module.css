@@ -1,0 +1,66 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.success {
+  color: var(--color-success);
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px;
+}
+
+.noItems {
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 12px;
+}
+
+.summary {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.errorTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-danger);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.errorList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.errorItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  border-left: 3px solid var(--color-danger);
+}
+
+.errorLabel {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.errorMsg {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
