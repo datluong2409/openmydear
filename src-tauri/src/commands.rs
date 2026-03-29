@@ -44,7 +44,11 @@ pub fn save_profiles(app: AppHandle, profiles: Vec<LaunchProfile>) -> Result<(),
 }
 
 #[tauri::command]
-pub fn run_item(app: AppHandle, item_path: String, open_with: Option<String>) -> Result<(), String> {
+pub fn run_item(
+    app: AppHandle,
+    item_path: String,
+    open_with: Option<String>,
+) -> Result<(), String> {
     open_path_with(&app, &item_path, &open_with)
 }
 
@@ -183,7 +187,7 @@ fn extract_icons_windows(apps: &mut Vec<AppInfo>) {
     use std::os::windows::process::CommandExt;
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-    // Only extract icons from .exe files (not .cmd, .bat, etc.)
+    // Only extract icons/metadata from .exe files (not .cmd, .bat, etc.)
     let exe_paths: Vec<&str> = apps
         .iter()
         .filter(|a| a.path.to_lowercase().ends_with(".exe"))
@@ -200,18 +204,30 @@ fn extract_icons_windows(apps: &mut Vec<AppInfo>) {
         .collect::<Vec<_>>()
         .join(",");
 
+    // Combined script: extract both FileDescription (friendly name) and icon in one pass
+    // Output format per line: STATUS\tPATH\tFILE_DESCRIPTION\tBASE64_ICON
     let script = format!(
         concat!(
             "Add-Type -AssemblyName System.Drawing;",
             "@({}) | ForEach-Object {{",
+            " $p=$_;",
             " try {{",
-            "  $i=[System.Drawing.Icon]::ExtractAssociatedIcon($_);",
-            "  $b=New-Object System.Drawing.Bitmap($i.ToBitmap(),24,24);",
-            "  $m=New-Object IO.MemoryStream;",
-            "  $b.Save($m,[System.Drawing.Imaging.ImageFormat]::Png);",
-            "  Write-Output (\"OK`t\" + $_ + \"`t\" + [Convert]::ToBase64String($m.ToArray()));",
-            "  $m.Dispose();$b.Dispose();$i.Dispose()",
-            " }} catch {{ Write-Output (\"ERR`t\" + $_ + \"`t\") }}",
+            "  $vi=[System.Diagnostics.FileVersionInfo]::GetVersionInfo($p);",
+            "  $fd=if($vi.FileDescription){{$vi.FileDescription}}else{{''}};",
+            "  try {{",
+            "   $ic=[System.Drawing.Icon]::ExtractAssociatedIcon($p);",
+            "   $bm=New-Object System.Drawing.Bitmap($ic.ToBitmap(),24,24);",
+            "   $ms=New-Object IO.MemoryStream;",
+            "   $bm.Save($ms,[System.Drawing.Imaging.ImageFormat]::Png);",
+            "   $b64=[Convert]::ToBase64String($ms.ToArray());",
+            "   $ms.Dispose();$bm.Dispose();$ic.Dispose();",
+            "   Write-Output (\"OK`t\" + $p + \"`t\" + $fd + \"`t\" + $b64)",
+            "  }} catch {{",
+            "   Write-Output (\"OK`t\" + $p + \"`t\" + $fd + \"`t\")",
+            "  }}",
+            " }} catch {{",
+            "  Write-Output (\"ERR`t\" + $p + \"`t`t\")",
+            " }}",
             "}}"
         ),
         ps_array
@@ -231,18 +247,29 @@ fn extract_icons_windows(apps: &mut Vec<AppInfo>) {
 
     if let Ok(output) = output {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let mut icon_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        // Maps: lowercase path -> (friendly_name, icon_base64)
+        let mut meta_map: std::collections::HashMap<String, (String, String)> =
+            std::collections::HashMap::new();
 
         for line in stdout.lines() {
-            let parts: Vec<&str> = line.splitn(3, '\t').collect();
-            if parts.len() == 3 && parts[0] == "OK" && !parts[2].is_empty() {
-                icon_map.insert(parts[1].to_lowercase(), parts[2].to_string());
+            let parts: Vec<&str> = line.splitn(4, '\t').collect();
+            if parts.len() == 4 && parts[0] == "OK" {
+                let path_key = parts[1].to_lowercase();
+                let friendly = parts[2].trim().to_string();
+                let icon_b64 = parts[3].to_string();
+                meta_map.insert(path_key, (friendly, icon_b64));
             }
         }
 
         for app in apps.iter_mut() {
-            if let Some(icon) = icon_map.get(&app.path.to_lowercase()) {
-                app.icon = Some(icon.clone());
+            if let Some((friendly, icon_b64)) = meta_map.get(&app.path.to_lowercase()) {
+                // Use FileDescription as display name if non-empty
+                if !friendly.is_empty() {
+                    app.name = friendly.clone();
+                }
+                if !icon_b64.is_empty() {
+                    app.icon = Some(icon_b64.clone());
+                }
             }
         }
     }
@@ -280,8 +307,7 @@ fn list_installed_apps() -> Vec<AppInfo> {
 
 // ── Autostart ──────────────────────────────────────────────────────────────
 
-const AUTOSTART_KEY: &str =
-    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+const AUTOSTART_KEY: &str = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const AUTOSTART_NAME: &str = "OpenMyDear";
 
 #[tauri::command]
@@ -309,8 +335,7 @@ pub fn set_autostart(_app: AppHandle, enabled: bool) -> Result<(), String> {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
 
         if enabled {
-            let exe = std::env::current_exe()
-                .map_err(|e| e.to_string())?;
+            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
             let exe_str = exe.to_string_lossy().to_string();
             Command::new("reg")
                 .args([
