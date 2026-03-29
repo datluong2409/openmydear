@@ -24,7 +24,8 @@ export type ProfileAction =
       type: "REORDER_ITEMS";
       profileId: string;
       items: LaunchItem[];
-    };
+    }
+  | { type: "REORDER_PROFILES"; profiles: LaunchProfile[] };
 
 export function profileReducer(
   state: LaunchProfile[],
@@ -75,6 +76,9 @@ export function profileReducer(
       return state.map((p) =>
         p.id === action.profileId ? { ...p, items: action.items } : p
       );
+
+    case "REORDER_PROFILES":
+      return action.profiles;
 
     default:
       return state;

@@ -1,11 +1,75 @@
 import { useState } from "react";
 import { nanoid } from "nanoid";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useProfiles } from "../../hooks/useProfiles";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Button } from "../common/Button";
 import { Modal } from "../common/Modal";
 import { Settings } from "../Settings/Settings";
+import type { LaunchProfile } from "../../types";
 import styles from "./Sidebar.module.css";
+
+interface SortableProfileItemProps {
+  profile: LaunchProfile;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDeleteClick: (e: React.MouseEvent, id: string) => void;
+  deleteLabel: string;
+}
+
+function SortableProfileItem({
+  profile,
+  isSelected,
+  onSelect,
+  onDeleteClick,
+  deleteLabel,
+}: SortableProfileItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: profile.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${styles.item} ${isSelected ? styles.active : ""}`}
+      onClick={() => onSelect(profile.id)}
+    >
+      <div className={styles.dragHandle} {...attributes} {...listeners}>
+        &#x2630;
+      </div>
+      <span className={styles.profileIcon}>&#x1F4C2;</span>
+      <span className={styles.name}>{profile.name}</span>
+      <span className={styles.count}>{profile.items.length}</span>
+      <button
+        className={styles.deleteBtn}
+        onClick={(e) => onDeleteClick(e, profile.id)}
+        title={deleteLabel}
+      >
+        &times;
+      </button>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const { profiles, selectedProfileId, selectProfile, dispatch } =
@@ -13,6 +77,18 @@ export function Sidebar() {
   const { t } = useTranslation();
   const [showSettings, setShowSettings] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = profiles.findIndex((p) => p.id === active.id);
+    const newIndex = profiles.findIndex((p) => p.id === over.id);
+    dispatch({ type: "REORDER_PROFILES", profiles: arrayMove(profiles, oldIndex, newIndex) });
+  };
 
   const handleNewProfile = () => {
     const id = nanoid();
@@ -52,26 +128,27 @@ export function Sidebar() {
       </div>
 
       <div className={styles.list}>
-        {profiles.map((profile) => (
-          <div
-            key={profile.id}
-            className={`${styles.item} ${
-              profile.id === selectedProfileId ? styles.active : ""
-            }`}
-            onClick={() => selectProfile(profile.id)}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={profiles.map((p) => p.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <span className={styles.profileIcon}>&#x1F4C2;</span>
-            <span className={styles.name}>{profile.name}</span>
-            <span className={styles.count}>{profile.items.length}</span>
-            <button
-              className={styles.deleteBtn}
-              onClick={(e) => handleDeleteClick(e, profile.id)}
-              title={t("profile.delete")}
-            >
-              &times;
-            </button>
-          </div>
-        ))}
+            {profiles.map((profile) => (
+              <SortableProfileItem
+                key={profile.id}
+                profile={profile}
+                isSelected={profile.id === selectedProfileId}
+                onSelect={selectProfile}
+                onDeleteClick={handleDeleteClick}
+                deleteLabel={t("profile.delete")}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         {profiles.length === 0 && (
           <div className={styles.empty}>{t("empty.description")}</div>
         )}

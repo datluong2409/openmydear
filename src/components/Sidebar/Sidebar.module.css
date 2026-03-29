@@ -52,6 +52,26 @@
   background: var(--color-bg-hover);
 }
 
+.dragHandle {
+  cursor: grab;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  padding: 2px 2px;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.12s;
+}
+
+.item:hover .dragHandle {
+  opacity: 1;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
 .item.active {
   background: var(--color-bg-active);
   box-shadow: inset 3px 0 0 var(--color-primary);
