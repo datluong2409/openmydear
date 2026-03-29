@@ -27,6 +27,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": "v1Compatible",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -34,5 +35,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/datluong2409/openmydear/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlGNEFBMzQyMjU5NjlBNTYKUldSV21wWWxRcU5LbjhpMWpUcGRMdlp1NWRIZVNkYlhmdU9oOGFZQWZLYVY4UmtUUHV6dW5TRDkK"
+    }
   }
 }

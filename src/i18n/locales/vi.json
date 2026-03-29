@@ -69,5 +69,7 @@
   "settings.storageLocationDesc": "Thư mục chứa tệp profiles.json",
   "settings.storageBrowse": "Thay đổi...",
   "settings.storageReset": "Về mặc định",
-  "settings.storageMoveFailed": "Không thể di chuyển dữ liệu"
+  "settings.storageMoveFailed": "Không thể di chuyển dữ liệu",
+  "update.title": "Có bản cập nhật",
+  "update.available": "Phiên bản {version} đã sẵn sàng. Bạn có muốn cập nhật và khởi động lại không?"
 }

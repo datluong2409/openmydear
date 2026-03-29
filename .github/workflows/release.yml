@@ -7,22 +7,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  release:
     permissions:
-      contents: read
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
             args: ''
-            artifact-name: windows
           - platform: macos-latest
             args: '--target aarch64-apple-darwin'
-            artifact-name: macos-arm64
           - platform: macos-latest
             args: '--target x86_64-apple-darwin'
-            artifact-name: macos-x64
 
     runs-on: ${{ matrix.platform }}
 
@@ -58,69 +55,47 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Build with Tauri
+      - name: Build and release with Tauri
         uses: tauri-apps/tauri-action@v0
-        id: tauri-build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'OpenMyDear ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: true
+          prerelease: false
           args: ${{ matrix.args }}
+          updaterJsonPreferNsis: true
 
-      - name: Zip Windows artifacts
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          $artifacts = '${{ steps.tauri-build.outputs.artifactPaths }}' | ConvertFrom-Json
-          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-          foreach ($path in $artifacts) {
-            Copy-Item $path -Destination release-assets/
-          }
-          Compress-Archive -Path "release-assets/*" -DestinationPath "OpenMyDear-${{ github.ref_name }}-windows-x64.zip"
-
-      - name: Upload Windows artifact
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact-name }}
-          path: OpenMyDear-*-windows-x64.zip
-
-      - name: Prepare macOS artifacts
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mkdir -p release-assets
-          echo '${{ steps.tauri-build.outputs.artifactPaths }}' | jq -r '.[]' | while read -r path; do
-            cp "$path" release-assets/
-          done
-
-      - name: Upload macOS artifacts
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact-name }}
-          path: release-assets/*
-
-  release:
-    needs: build
+  zip-windows:
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List release files
-        run: find artifacts -type f
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: 'OpenMyDear ${{ github.ref_name }}'
-          body: 'See the assets to download and install this version.'
-          draft: true
-          prerelease: false
-          files: artifacts/**/*
+      - name: Download Windows installers from release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p windows-installers
+          gh release download "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "*.exe" \
+            --pattern "*.msi" \
+            --dir windows-installers
+
+      - name: Zip Windows installers
+        run: |
+          cd windows-installers
+          zip "../OpenMyDear-${{ github.ref_name }}-windows-x64.zip" *
+
+      - name: Upload zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "OpenMyDear-${{ github.ref_name }}-windows-x64.zip" \
+            --repo "${{ github.repository }}"
