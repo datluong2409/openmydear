@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { MonitorPlay, FileText, FolderOpen } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -152,9 +153,9 @@ export function ProfileDetail() {
       </div>
 
       <div className="flex gap-2">
-        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("app")}>+ {t("item.addApp")}</Button>
-        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("file")}>+ {t("item.addFile")}</Button>
-        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("folder")}>+ {t("item.addFolder")}</Button>
+        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("app")}><MonitorPlay size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("item.addApp")}</Button>
+        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("file")}><FileText size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("item.addFile")}</Button>
+        <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("folder")}><FolderOpen size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("item.addFolder")}</Button>
       </div>
 
       {profile.items.length === 0 ? (
