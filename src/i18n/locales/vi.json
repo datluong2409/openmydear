@@ -52,6 +52,7 @@
   "toast.saved": "Đã lưu hồ sơ",
   "toast.error": "Đã xảy ra lỗi",
   "picker.title": "Chọn ứng dụng để mở",
+  "picker.titleAddApp": "Chọn ứng dụng để thêm",
   "picker.search": "Tìm ứng dụng...",
   "picker.default": "Mặc định hệ thống",
   "picker.browse": "Duyệt...",

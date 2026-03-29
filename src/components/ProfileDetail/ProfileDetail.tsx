@@ -16,7 +16,6 @@ import {
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { nanoid } from "nanoid";
 import { useProfiles } from "../../hooks/useProfiles";
-import { usePlatform } from "../../hooks/usePlatform";
 import { useTranslation } from "../../i18n/useTranslation";
 import { runProfile } from "../../commands";
 import { Button } from "../common/Button";
@@ -29,7 +28,6 @@ import type { LaunchItem, ItemType, RunResult, AppInfo } from "../../types";
 export function ProfileDetail() {
   const { selectedProfile, dispatch } = useProfiles();
   const { t } = useTranslation();
-  const { isMacos } = usePlatform();
 
   const [isRunning, setIsRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
@@ -39,6 +37,7 @@ export function ProfileDetail() {
   const [showOpenWithPicker, setShowOpenWithPicker] = useState(false);
   const pickerContextRef = useRef<
     | { mode: "add"; type: ItemType; label: string; path: string }
+    | { mode: "add-app" }
     | { mode: "change"; item: LaunchItem }
     | null
   >(null);
@@ -71,24 +70,21 @@ export function ProfileDetail() {
 
   const handleQuickAdd = async (type: ItemType) => {
     if (!profile) return;
+    if (type === "app") {
+      pickerContextRef.current = { mode: "add-app" };
+      setShowOpenWithPicker(true);
+      return;
+    }
     try {
       const isFolder = type === "folder";
-      const pickDirectory = isFolder || (type === "app" && isMacos);
-      const filters =
-        !pickDirectory && type === "app"
-          ? [{ name: "Applications", extensions: ["exe", "lnk"] }]
-          : type === "file" ? [{ name: "All Files", extensions: ["*"] }] : undefined;
+      const filters = type === "file" ? [{ name: "All Files", extensions: ["*"] }] : undefined;
 
-      const selected = await dialogOpen({ directory: pickDirectory, multiple: false, filters });
+      const selected = await dialogOpen({ directory: isFolder, multiple: false, filters });
       if (selected) {
         const selectedPath = selected as string;
         const label = (selectedPath.split(/[/\\]/).pop() || "").replace(/\.\w+$/, "");
-        if (type !== "app") {
-          pickerContextRef.current = { mode: "add", type, label, path: selectedPath };
-          setShowOpenWithPicker(true);
-        } else {
-          dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type, label, path: selectedPath, platform: "both" } });
-        }
+        pickerContextRef.current = { mode: "add", type, label, path: selectedPath };
+        setShowOpenWithPicker(true);
       }
     } catch (err) { console.error("Browse failed:", err); }
   };
@@ -97,7 +93,11 @@ export function ProfileDetail() {
     if (!profile) return;
     const ctx = pickerContextRef.current;
     if (!ctx) return;
-    if (ctx.mode === "add") {
+    if (ctx.mode === "add-app") {
+      if (app) {
+        dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: "app", label: app.name, path: app.path, platform: "both" } });
+      }
+    } else if (ctx.mode === "add") {
       dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: ctx.type, label: ctx.label, path: ctx.path, platform: "both", openWith: app?.path, openWithName: app?.name, openWithIcon: app?.icon } });
     } else {
       dispatch({ type: "UPDATE_ITEM", profileId: profile.id, item: { ...ctx.item, openWith: app?.path, openWithName: app?.name, openWithIcon: app?.icon } });
@@ -111,6 +111,7 @@ export function ProfileDetail() {
       const ctx = pickerContextRef.current;
       dispatch({ type: "ADD_ITEM", profileId: profile.id, item: { id: nanoid(), type: ctx.type, label: ctx.label, path: ctx.path, platform: "both" } });
     }
+    // add-app mode: cancel means don't add anything
     pickerContextRef.current = null;
     setShowOpenWithPicker(false);
   };
@@ -175,7 +176,7 @@ export function ProfileDetail() {
       )}
 
       <AddItemDialog open={showEditDialog} onClose={() => { setShowEditDialog(false); setEditItem(null); }} onSave={handleSaveItem} editItem={editItem} />
-      <OpenWithPicker open={showOpenWithPicker} onSelect={handleOpenWithSelect} onCancel={handleOpenWithCancel} />
+      <OpenWithPicker open={showOpenWithPicker} onSelect={handleOpenWithSelect} onCancel={handleOpenWithCancel} mode={pickerContextRef.current?.mode === "add-app" ? "addApp" : "openWith"} />
       <RunResultDialog open={showRunResult} onClose={() => setShowRunResult(false)} result={runResult} />
     </div>
   );

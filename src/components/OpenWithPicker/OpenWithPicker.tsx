@@ -10,9 +10,10 @@ interface OpenWithPickerProps {
   open: boolean;
   onSelect: (app: AppInfo | undefined) => void;
   onCancel: () => void;
+  mode?: "openWith" | "addApp";
 }
 
-export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPickerProps) {
+export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openWith" }: OpenWithPickerProps) {
   const { t } = useTranslation();
   const [apps, setApps] = useState<AppInfo[]>([]);
   const [search, setSearch] = useState("");
@@ -45,7 +46,7 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPic
   };
 
   return (
-    <Modal open={isOpen} onClose={onCancel} title={t("picker.title")}>
+    <Modal open={isOpen} onClose={onCancel} title={mode === "addApp" ? t("picker.titleAddApp") : t("picker.title")}>
       <div className="flex flex-col gap-3" style={{ minWidth: 380 }}>
         <input
           className="w-full text-[13px] outline-none transition-colors"
@@ -72,7 +73,8 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPic
             borderRadius: "var(--radius-sm)",
           }}
         >
-          {/* Default / system default option */}
+          {/* Default / system default option — hidden in addApp mode */}
+          {mode !== "addApp" && (
           <button
             className="flex items-center gap-[10px] px-[10px] py-2 cursor-pointer text-left w-full transition-colors"
             style={{
@@ -96,6 +98,7 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel }: OpenWithPic
               </div>
             </div>
           </button>
+          )}
 
           {loading ? (
             <div

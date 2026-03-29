@@ -52,6 +52,7 @@
   "toast.saved": "Profile saved",
   "toast.error": "An error occurred",
   "picker.title": "Choose app to open with",
+  "picker.titleAddApp": "Choose an app to add",
   "picker.search": "Search apps...",
   "picker.default": "System Default",
   "picker.browse": "Browse...",
