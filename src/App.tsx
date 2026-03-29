@@ -4,15 +4,14 @@ import { useProfiles } from "./hooks/useProfiles";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { ProfileDetail } from "./components/ProfileDetail/ProfileDetail";
 import { EmptyState } from "./components/EmptyState/EmptyState";
-import styles from "./App.module.css";
 
 function MainContent() {
   const { selectedProfile } = useProfiles();
 
   return (
-    <div className={styles.layout}>
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className={styles.main}>
+      <main className="flex-1 min-w-0 overflow-hidden">
         {selectedProfile ? <ProfileDetail /> : <EmptyState />}
       </main>
     </div>

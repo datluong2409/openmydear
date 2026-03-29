@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import styles from "./Modal.module.css";
 
 interface ModalProps {
   open: boolean;
@@ -24,20 +23,40 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 
   return (
     <div
-      className={styles.overlay}
+      className="fixed inset-0 flex items-center justify-center z-[100] animate-[fadeIn_0.15s_ease]"
+      style={{ background: "rgba(0,0,0,0.4)" }}
       ref={overlayRef}
-      onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
-      }}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <h3 className={styles.title}>{title}</h3>
-          <button className={styles.close} onClick={onClose}>
+      <div
+        className="w-[90%] max-w-[460px] max-h-[80vh] overflow-auto rounded-[var(--radius-lg)] animate-[slideUp_0.15s_ease]"
+        style={{
+          background: "var(--color-bg-secondary)",
+          boxShadow: "var(--shadow-md)",
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-5 pt-4 pb-3"
+          style={{ borderBottom: "1px solid var(--color-border)" }}
+        >
+          <h3 className="text-[15px] font-semibold">{title}</h3>
+          <button
+            className="w-7 h-7 flex items-center justify-center text-[18px] rounded-[var(--radius-sm)] transition-colors cursor-pointer"
+            style={{ color: "var(--color-text-secondary)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--color-bg-hover)";
+              e.currentTarget.style.color = "var(--color-text)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "";
+              e.currentTarget.style.color = "var(--color-text-secondary)";
+            }}
+            onClick={onClose}
+          >
             &times;
           </button>
         </div>
-        <div className={styles.body}>{children}</div>
+        <div className="px-5 pt-4 pb-5">{children}</div>
       </div>
     </div>
   );
