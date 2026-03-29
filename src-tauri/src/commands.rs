@@ -120,11 +120,13 @@ pub fn get_installed_apps() -> Vec<AppInfo> {
 fn list_installed_apps() -> Vec<AppInfo> {
     use std::collections::HashSet;
     use std::os::windows::process::CommandExt;
+    use std::path::Path;
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let mut apps = Vec::new();
     let mut seen = HashSet::new();
 
+    // ── Source 1: Registry App Paths ─────────────────────────────────────
     for root in ["HKLM", "HKCU"] {
         let key = format!(
             "{}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths",
@@ -170,6 +172,92 @@ fn list_installed_apps() -> Vec<AppInfo> {
                     }
                 }
                 current_exe = None;
+            }
+        }
+    }
+
+    // ── Source 2: Start Menu shortcuts (.lnk) ────────────────────────────
+    let mut lnk_files: Vec<String> = Vec::new();
+    let start_menu_dirs: Vec<String> = [
+        std::env::var("ProgramData").ok().map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
+        std::env::var("AppData").ok().map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+
+    fn collect_lnk_files(dir: &Path, out: &mut Vec<String>) {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if path.is_dir() {
+                    collect_lnk_files(&path, out);
+                } else if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("lnk")) {
+                    out.push(path.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    for dir in &start_menu_dirs {
+        collect_lnk_files(Path::new(dir), &mut lnk_files);
+    }
+
+    if !lnk_files.is_empty() {
+        // Resolve .lnk targets in a single PowerShell call
+        let ps_array = lnk_files
+            .iter()
+            .map(|p| format!("'{}'", p.replace('\'', "''")))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        let script = format!(
+            concat!(
+                "$ws=New-Object -ComObject WScript.Shell;",
+                "@({}) | ForEach-Object {{",
+                " try {{",
+                "  $s=$ws.CreateShortcut($_);",
+                "  Write-Output ($_ + \"`t\" + $s.TargetPath)",
+                " }} catch {{",
+                "  Write-Output ($_ + \"`t\")",
+                " }}",
+                "}}"
+            ),
+            ps_array
+        );
+
+        if let Ok(output) = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+        {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                let parts: Vec<&str> = line.splitn(2, '\t').collect();
+                if parts.len() == 2 {
+                    let lnk_path = parts[0].trim();
+                    let target = parts[1].trim().to_string();
+                    if target.is_empty() {
+                        continue;
+                    }
+                    let lower = target.to_lowercase();
+                    if !lower.ends_with(".exe") || seen.contains(&lower) {
+                        continue;
+                    }
+                    seen.insert(lower);
+                    // Use the .lnk filename (without extension) as the display name
+                    let name = Path::new(lnk_path)
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    if !name.is_empty() {
+                        apps.push(AppInfo {
+                            name,
+                            path: target,
+                            icon: None,
+                        });
+                    }
+                }
             }
         }
     }
