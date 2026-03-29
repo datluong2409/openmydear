@@ -179,8 +179,12 @@ fn list_installed_apps() -> Vec<AppInfo> {
     // ── Source 2: Start Menu shortcuts (.lnk) ────────────────────────────
     let mut lnk_files: Vec<String> = Vec::new();
     let start_menu_dirs: Vec<String> = [
-        std::env::var("ProgramData").ok().map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
-        std::env::var("AppData").ok().map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
+        std::env::var("ProgramData")
+            .ok()
+            .map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
+        std::env::var("AppData")
+            .ok()
+            .map(|d| d + "\\Microsoft\\Windows\\Start Menu\\Programs"),
     ]
     .into_iter()
     .flatten()
@@ -192,7 +196,10 @@ fn list_installed_apps() -> Vec<AppInfo> {
                 let path = entry.path();
                 if path.is_dir() {
                     collect_lnk_files(&path, out);
-                } else if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("lnk")) {
+                } else if path
+                    .extension()
+                    .map_or(false, |ext| ext.eq_ignore_ascii_case("lnk"))
+                {
                     out.push(path.to_string_lossy().to_string());
                 }
             }
@@ -227,7 +234,14 @@ fn list_installed_apps() -> Vec<AppInfo> {
         );
 
         if let Ok(output) = Command::new("powershell")
-            .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                &script,
+            ])
             .creation_flags(CREATE_NO_WINDOW)
             .output()
         {
@@ -426,7 +440,7 @@ pub fn get_autostart() -> bool {
 }
 
 #[tauri::command]
-pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn set_autostart(_app: AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
