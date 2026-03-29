@@ -71,5 +71,7 @@
   "settings.storageReset": "Reset to default",
   "settings.storageMoveFailed": "Failed to move storage",
   "update.title": "Update Available",
-  "update.available": "Version {version} is available. Would you like to update and restart?"
+  "update.available": "Version {version} is available. Would you like to update and restart?",
+  "settings.about": "About",
+  "settings.version": "Version"
 }

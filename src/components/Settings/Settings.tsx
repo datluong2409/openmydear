@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
+import { getVersion } from "@tauri-apps/api/app";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
@@ -19,6 +20,7 @@ export function Settings({ open, onClose }: SettingsProps) {
   const [defaultStorageDir, setDefaultStorageDirState] = useState("");
   const [storageLoading, setStorageLoading] = useState(false);
   const [storageError, setStorageError] = useState("");
+  const [appVersion, setAppVersion] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -27,6 +29,7 @@ export function Settings({ open, onClose }: SettingsProps) {
       setStorageDirState(dir);
       if (!defaultStorageDir) setDefaultStorageDirState(dir);
     }).catch(() => {});
+    getVersion().then(setAppVersion).catch(() => {});
   }, [open]);
 
   const handleAutostartChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +207,32 @@ export function Settings({ open, onClose }: SettingsProps) {
               <option value="en">English</option>
               <option value="vi">Tiếng Việt</option>
             </select>
+          </div>
+        </div>
+
+        {/* About section */}
+        <div className="flex flex-col gap-2">
+          <div
+            className="text-[11px] font-bold uppercase tracking-[0.6px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            {t("settings.about")}
+          </div>
+          <div
+            className="flex items-center justify-between gap-4 px-[14px] py-3"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
+            <span className="text-[13px] font-medium">{t("settings.version")}</span>
+            <span
+              className="text-[13px]"
+              style={{ color: "var(--color-text-muted)", fontFamily: "monospace" }}
+            >
+              {appVersion ? `v${appVersion}` : "…"}
+            </span>
           </div>
         </div>
 
