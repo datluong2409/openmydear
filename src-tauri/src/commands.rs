@@ -440,7 +440,7 @@ pub fn get_autostart() -> bool {
 }
 
 #[tauri::command]
-pub fn set_autostart(_app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
