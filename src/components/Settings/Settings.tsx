@@ -34,16 +34,32 @@ export function Settings({ open, onClose }: SettingsProps) {
 
   return (
     <Modal open={open} onClose={onClose} title={t("settings.title")}>
-      <div className="flex flex-col gap-5 min-w-[320px]">
+      <div className="flex flex-col gap-5" style={{ minWidth: 320 }}>
 
+        {/* General section */}
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.6px] text-(--color-text-muted)">
+          <div
+            className="text-[11px] font-bold uppercase tracking-[0.6px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
             {t("settings.general")}
           </div>
-          <div className="flex items-center justify-between gap-4 px-[14px] py-3 bg-(--color-bg) border border-(--color-border) rounded-[var(--radius-md)]">
+          <div
+            className="flex items-center justify-between gap-4 px-[14px] py-3"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
             <div className="flex flex-col gap-[2px]">
               <span className="text-[13px] font-medium">{t("settings.autostart")}</span>
-              <span className="text-[11px] text-(--color-text-muted)">{t("settings.autostartDesc")}</span>
+              <span
+                className="text-[11px]"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {t("settings.autostartDesc")}
+              </span>
             </div>
             <label className="settings-toggle relative w-[40px] h-[22px] shrink-0">
               <input
@@ -58,16 +74,35 @@ export function Settings({ open, onClose }: SettingsProps) {
           </div>
         </div>
 
+        {/* Language section */}
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.6px] text-(--color-text-muted)">
+          <div
+            className="text-[11px] font-bold uppercase tracking-[0.6px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
             {t("language")}
           </div>
-          <div className="flex items-center justify-between gap-4 px-[14px] py-3 bg-(--color-bg) border border-(--color-border) rounded-[var(--radius-md)]">
+          <div
+            className="flex items-center justify-between gap-4 px-[14px] py-3"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
             <div className="flex flex-col gap-[2px]">
               <span className="text-[13px] font-medium">{t("settings.displayLanguage")}</span>
             </div>
             <select
-              className="px-[10px] py-[7px] border border-(--color-border) rounded-[var(--radius-sm)] bg-(--color-bg-secondary) text-(--color-text) text-[13px] cursor-pointer min-w-[100px]"
+              className="text-[13px] cursor-pointer"
+              style={{
+                padding: "7px 10px",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                background: "var(--color-bg-secondary)",
+                color: "var(--color-text)",
+                minWidth: 100,
+              }}
               value={locale}
               onChange={(e) => setLocale(e.target.value as Locale)}
             >
