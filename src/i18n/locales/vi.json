@@ -64,6 +64,8 @@
   "settings.general": "Chung",
   "settings.autostart": "Khởi động cùng Windows",
   "settings.autostartDesc": "Mở OpenMyDear khi Windows khởi động",
+  "settings.alwaysOnTop": "Luôn hiển thị trên cùng",
+  "settings.alwaysOnTopDesc": "Giữ cửa sổ luôn nằm trên các cửa sổ khác",
   "settings.displayLanguage": "Ngôn ngữ hiển thị",
   "settings.storage": "Lưu trữ",
   "settings.storageLocation": "Vị trí lưu trữ",

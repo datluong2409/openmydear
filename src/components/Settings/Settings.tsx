@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { getVersion } from "@tauri-apps/api/app";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
@@ -16,6 +17,8 @@ export function Settings({ open, onClose }: SettingsProps) {
   const { t, locale, setLocale } = useTranslation();
   const [autostart, setAutostartState] = useState(false);
   const [autostartLoading, setAutostartLoading] = useState(false);
+  const [alwaysOnTop, setAlwaysOnTopState] = useState(true);
+  const [alwaysOnTopLoading, setAlwaysOnTopLoading] = useState(false);
   const [storageDir, setStorageDirState] = useState("");
   const [defaultStorageDir, setDefaultStorageDirState] = useState("");
   const [storageLoading, setStorageLoading] = useState(false);
@@ -25,6 +28,7 @@ export function Settings({ open, onClose }: SettingsProps) {
   useEffect(() => {
     if (!open) return;
     getAutostart().then(setAutostartState).catch(() => {});
+    getCurrentWindow().isAlwaysOnTop().then(setAlwaysOnTopState).catch(() => {});
     getStorageDir().then((dir) => {
       setStorageDirState(dir);
       if (!defaultStorageDir) setDefaultStorageDirState(dir);
@@ -42,6 +46,19 @@ export function Settings({ open, onClose }: SettingsProps) {
       // revert on error
     } finally {
       setAutostartLoading(false);
+    }
+  };
+
+  const handleAlwaysOnTopChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = e.target.checked;
+    setAlwaysOnTopLoading(true);
+    try {
+      await getCurrentWindow().setAlwaysOnTop(enabled);
+      setAlwaysOnTopState(enabled);
+    } catch {
+      // revert on error
+    } finally {
+      setAlwaysOnTopLoading(false);
     }
   };
 
@@ -112,6 +129,34 @@ export function Settings({ open, onClose }: SettingsProps) {
                 checked={autostart}
                 disabled={autostartLoading}
                 onChange={handleAutostartChange}
+                className="opacity-0 w-0 h-0 absolute"
+              />
+              <span className="settings-toggle-track absolute inset-0 rounded-[22px] cursor-pointer transition-colors" />
+            </label>
+          </div>
+          <div
+            className="flex items-center justify-between gap-4 px-[14px] py-3"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
+            <div className="flex flex-col gap-[2px]">
+              <span className="text-[13px] font-medium">{t("settings.alwaysOnTop")}</span>
+              <span
+                className="text-[11px]"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {t("settings.alwaysOnTopDesc")}
+              </span>
+            </div>
+            <label className="settings-toggle relative w-[40px] h-[22px] shrink-0">
+              <input
+                type="checkbox"
+                checked={alwaysOnTop}
+                disabled={alwaysOnTopLoading}
+                onChange={handleAlwaysOnTopChange}
                 className="opacity-0 w-0 h-0 absolute"
               />
               <span className="settings-toggle-track absolute inset-0 rounded-[22px] cursor-pointer transition-colors" />

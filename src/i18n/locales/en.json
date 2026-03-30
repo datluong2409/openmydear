@@ -64,6 +64,8 @@
   "settings.general": "General",
   "settings.autostart": "Launch on startup",
   "settings.autostartDesc": "Open OpenMyDear when Windows starts",
+  "settings.alwaysOnTop": "Always on top",
+  "settings.alwaysOnTopDesc": "Keep window above all other windows",
   "settings.displayLanguage": "Display language",
   "settings.storage": "Storage",
   "settings.storageLocation": "Storage location",
