@@ -19,6 +19,8 @@ pub fn run() {
             commands::get_installed_apps,
             commands::get_storage_dir,
             commands::set_storage_dir,
+            commands::get_always_on_top,
+            commands::set_always_on_top,
             commands::get_autostart,
             commands::set_autostart,
         ])

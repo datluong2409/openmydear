@@ -8,6 +8,8 @@ use crate::models::LaunchProfile;
 #[derive(Serialize, Deserialize, Default)]
 struct Config {
     storage_dir: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    always_on_top: Option<bool>,
 }
 
 fn get_default_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -35,8 +37,7 @@ fn read_config(app: &AppHandle) -> Config {
 fn write_config(app: &AppHandle, config: &Config) -> Result<(), String> {
     let path = get_config_file(app)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create config dir: {}", e))?;
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create config dir: {}", e))?;
     }
     let content = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
@@ -70,8 +71,7 @@ pub fn set_storage_dir(app: &AppHandle, new_dir: &str) -> Result<(), String> {
     let old_data_file = get_data_file(app)?;
     let new_data_file = new_dir_path.join("profiles.json");
 
-    fs::create_dir_all(&new_dir_path)
-        .map_err(|e| format!("Failed to create directory: {}", e))?;
+    fs::create_dir_all(&new_dir_path).map_err(|e| format!("Failed to create directory: {}", e))?;
 
     if old_data_file.exists() && old_data_file != new_data_file {
         fs::copy(&old_data_file, &new_data_file)
@@ -81,12 +81,24 @@ pub fn set_storage_dir(app: &AppHandle, new_dir: &str) -> Result<(), String> {
     }
 
     let default_dir = get_default_data_dir(app)?;
-    let config = if new_dir_path == default_dir {
-        Config { storage_dir: None }
+    let mut config = read_config(app);
+    config.storage_dir = if new_dir_path == default_dir {
+        None
     } else {
-        Config { storage_dir: Some(new_dir.to_string()) }
+        Some(new_dir.to_string())
     };
 
+    write_config(app, &config)
+}
+
+pub fn get_always_on_top(app: &AppHandle) -> bool {
+    let config = read_config(app);
+    config.always_on_top.unwrap_or(true)
+}
+
+pub fn set_always_on_top(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    let mut config = read_config(app);
+    config.always_on_top = Some(enabled);
     write_config(app, &config)
 }
 
@@ -97,8 +109,8 @@ pub fn load(app: &AppHandle) -> Result<Vec<LaunchProfile>, String> {
         return Ok(Vec::new());
     }
 
-    let content = fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read profiles: {}", e))?;
+    let content =
+        fs::read_to_string(&file_path).map_err(|e| format!("Failed to read profiles: {}", e))?;
 
     let profiles: Vec<LaunchProfile> =
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse profiles: {}", e))?;

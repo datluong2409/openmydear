@@ -423,6 +423,16 @@ pub fn set_storage_dir(app: AppHandle, path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn get_always_on_top(app: AppHandle) -> bool {
+    storage::get_always_on_top(&app)
+}
+
+#[tauri::command]
+pub fn set_always_on_top(app: AppHandle, enabled: bool) -> Result<(), String> {
+    storage::set_always_on_top(&app, enabled)
+}
+
+#[tauri::command]
 pub fn get_autostart() -> bool {
     #[cfg(target_os = "windows")]
     {

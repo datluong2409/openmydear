@@ -49,3 +49,11 @@ export async function getAutostart(): Promise<boolean> {
 export async function setAutostart(enabled: boolean): Promise<void> {
   return invoke("set_autostart", { enabled });
 }
+
+export async function getAlwaysOnTop(): Promise<boolean> {
+  return invoke<boolean>("get_always_on_top");
+}
+
+export async function setAlwaysOnTop(enabled: boolean): Promise<void> {
+  return invoke("set_always_on_top", { enabled });
+}

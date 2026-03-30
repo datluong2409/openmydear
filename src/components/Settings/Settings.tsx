@@ -5,7 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
-import { getAutostart, setAutostart, getStorageDir, setStorageDir } from "../../commands";
+import { getAutostart, setAutostart, getStorageDir, setStorageDir, getAlwaysOnTop, setAlwaysOnTop } from "../../commands";
 import type { Locale } from "../../i18n/I18nContext";
 
 interface SettingsProps {
@@ -28,7 +28,7 @@ export function Settings({ open, onClose }: SettingsProps) {
   useEffect(() => {
     if (!open) return;
     getAutostart().then(setAutostartState).catch(() => {});
-    getCurrentWindow().isAlwaysOnTop().then(setAlwaysOnTopState).catch(() => {});
+    getAlwaysOnTop().then(setAlwaysOnTopState).catch(() => {});
     getStorageDir().then((dir) => {
       setStorageDirState(dir);
       if (!defaultStorageDir) setDefaultStorageDirState(dir);
@@ -54,6 +54,7 @@ export function Settings({ open, onClose }: SettingsProps) {
     setAlwaysOnTopLoading(true);
     try {
       await getCurrentWindow().setAlwaysOnTop(enabled);
+      await setAlwaysOnTop(enabled);
       setAlwaysOnTopState(enabled);
     } catch {
       // revert on error
