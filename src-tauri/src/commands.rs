@@ -380,17 +380,28 @@ fn extract_icons_windows(apps: &mut Vec<AppInfo>) {
 #[cfg(target_os = "macos")]
 fn list_installed_apps() -> Vec<AppInfo> {
     let mut apps = Vec::new();
-    for dir in ["/Applications", "/System/Applications"] {
+
+    let mut dirs = vec![
+        "/Applications".to_string(),
+        "/System/Applications".to_string(),
+    ];
+    if let Ok(home) = std::env::var("HOME") {
+        dirs.push(format!("{}/Applications", home));
+    }
+
+    for dir in &dirs {
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let path = entry.path();
                 if path.extension().map_or(false, |ext| ext == "app") {
                     if let Some(name) = path.file_stem().map(|s| s.to_string_lossy().to_string()) {
                         if !name.is_empty() {
+                            let path_str = path.to_string_lossy().to_string();
+                            let icon = extract_icon_macos(&path_str);
                             apps.push(AppInfo {
                                 name,
-                                path: path.to_string_lossy().to_string(),
-                                icon: None,
+                                path: path_str,
+                                icon,
                             });
                         }
                     }
@@ -400,6 +411,82 @@ fn list_installed_apps() -> Vec<AppInfo> {
     }
     apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     apps
+}
+
+#[cfg(target_os = "macos")]
+fn extract_icon_macos(app_path: &str) -> Option<String> {
+    let plist_path = format!("{}/Contents/Info.plist", app_path);
+
+    // Read icon filename from Info.plist
+    let plist_out = Command::new("/usr/libexec/PlistBuddy")
+        .args(["-c", "Print CFBundleIconFile", &plist_path])
+        .output()
+        .ok()?;
+
+    if !plist_out.status.success() {
+        return None;
+    }
+
+    let icon_name = String::from_utf8_lossy(&plist_out.stdout)
+        .trim()
+        .to_string();
+    if icon_name.is_empty() {
+        return None;
+    }
+
+    let icon_file = if icon_name.ends_with(".icns") {
+        icon_name
+    } else {
+        format!("{}.icns", icon_name)
+    };
+
+    let icns_path = format!("{}/Contents/Resources/{}", app_path, icon_file);
+    if !std::path::Path::new(&icns_path).exists() {
+        return None;
+    }
+
+    // Convert icns -> 32x32 PNG via sips, pipe directly to stdout
+    let sips_out = Command::new("sips")
+        .args([
+            "-s", "format", "png",
+            "-Z", "32",
+            &icns_path,
+            "--out", "/dev/stdout",
+        ])
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+
+    if sips_out.stdout.is_empty() {
+        return None;
+    }
+
+    Some(base64_encode(&sips_out.stdout))
+}
+
+#[cfg(target_os = "macos")]
+fn base64_encode(data: &[u8]) -> String {
+    const A: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
+        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(A[(n >> 18) & 0x3f] as char);
+        out.push(A[(n >> 12) & 0x3f] as char);
+        if chunk.len() > 1 {
+            out.push(A[(n >> 6) & 0x3f] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(A[n & 0x3f] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
