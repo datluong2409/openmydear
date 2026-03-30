@@ -82,5 +82,10 @@
   "profile.sequential": "Sequential",
   "profile.delay": "Delay",
   "profile.delayUnit": "sec",
-  "profile.stop": "Stop"
+  "profile.stop": "Stop",
+  "coffee.title": "Buy Me a Coffee",
+  "coffee.description": "If you find this app useful, consider buying me a coffee!",
+  "coffee.momo": "MoMo",
+  "coffee.paypal": "PayPal",
+  "coffee.thanks": "Thank you for your support!"
 }

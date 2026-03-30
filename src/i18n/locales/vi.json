@@ -82,5 +82,10 @@
   "profile.sequential": "Tuần tự",
   "profile.delay": "Độ trễ",
   "profile.delayUnit": "giây",
-  "profile.stop": "Dừng"
+  "profile.stop": "Dừng",
+  "coffee.title": "Mua cho tôi ly cà phê",
+  "coffee.description": "Nếu bạn thấy ứng dụng hữu ích, hãy mua cho tôi ly cà phê nhé!",
+  "coffee.momo": "MoMo",
+  "coffee.paypal": "PayPal",
+  "coffee.thanks": "Cảm ơn bạn đã ủng hộ!"
 }

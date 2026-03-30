@@ -21,6 +21,7 @@ import { useTranslation } from "../../i18n/useTranslation";
 import { Button } from "../common/Button";
 import { Modal } from "../common/Modal";
 import { Settings } from "../Settings/Settings";
+import { BuyMeACoffee } from "../BuyMeACoffee/BuyMeACoffee";
 import type { LaunchProfile } from "../../types";
 
 interface SortableProfileItemProps {
@@ -118,6 +119,7 @@ export function Sidebar() {
   const { profiles, selectedProfileId, selectProfile, dispatch } = useProfiles();
   const { t } = useTranslation();
   const [showSettings, setShowSettings] = useState(false);
+  const [showCoffee, setShowCoffee] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -199,7 +201,7 @@ export function Sidebar() {
       </div>
 
       <div
-        className="px-3 py-[10px] flex items-center gap-2"
+        className="px-3 py-[10px] flex items-center justify-between"
         style={{ borderTop: "1px solid var(--color-border)" }}
       >
         <button
@@ -218,9 +220,27 @@ export function Sidebar() {
         >
           &#x2699;&#xFE0F;
         </button>
+        <button
+          className="flex items-center gap-[6px] h-[30px] px-[8px] rounded-[var(--radius-md)] text-[12px] cursor-pointer transition-colors shrink-0"
+          style={{ color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--color-bg-hover)";
+            e.currentTarget.style.color = "var(--color-text)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "";
+            e.currentTarget.style.color = "var(--color-text-secondary)";
+          }}
+          onClick={() => setShowCoffee(true)}
+          title={t("coffee.title")}
+        >
+          <span className="text-[16px]">&#x2615;</span>
+          <span>{t("coffee.title")}</span>
+        </button>
       </div>
 
       <Settings open={showSettings} onClose={() => setShowSettings(false)} />
+      <BuyMeACoffee open={showCoffee} onClose={() => setShowCoffee(false)} />
 
       {pendingDeleteId && (
         <Modal open={!!pendingDeleteId} onClose={cancelDelete} onConfirm={confirmDelete} title={t("profile.delete")}>
