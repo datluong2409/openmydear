@@ -137,9 +137,8 @@ export function ProfileDetail() {
     }
     try {
       const isFolder = type === "folder";
-      const filters = type === "file" ? [{ name: "All Files", extensions: ["*"] }] : undefined;
 
-      const selected = await dialogOpen({ directory: isFolder, multiple: false, filters });
+      const selected = await dialogOpen({ directory: isFolder, multiple: false });
       if (selected) {
         const selectedPath = selected as string;
         const label = (selectedPath.split(/[/\\]/).pop() || "").replace(/\.\w+$/, "");

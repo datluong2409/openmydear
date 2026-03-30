@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n/useTranslation";
+import { usePlatform } from "../../hooks/usePlatform";
 import { getInstalledApps } from "../../commands";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
@@ -15,6 +16,7 @@ interface OpenWithPickerProps {
 
 export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openWith" }: OpenWithPickerProps) {
   const { t } = useTranslation();
+  const { isMacos } = usePlatform();
   const [apps, setApps] = useState<AppInfo[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,10 +36,10 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openW
   const handleBrowse = async () => {
     try {
       const selected = await open({
-        directory: false,
+        directory: isMacos,
         multiple: false,
         title: t("picker.browse"),
-        filters: [{ name: "Applications", extensions: ["exe", "lnk"] }],
+        filters: isMacos ? undefined : [{ name: "Applications", extensions: ["exe", "lnk"] }],
       });
       if (selected) onSelect({ name: (selected as string).split(/[/\\]/).pop()?.replace(/\.\w+$/, "") || (selected as string), path: selected as string });
     } catch (err) {
