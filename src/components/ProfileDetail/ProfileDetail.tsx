@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { MonitorPlay, FileText, FolderOpen } from "lucide-react";
+import { MonitorPlay, FileText, FolderOpen, Square } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -17,18 +17,22 @@ import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { nanoid } from "nanoid";
 import { useProfiles } from "../../hooks/useProfiles";
 import { useTranslation } from "../../i18n/useTranslation";
-import { runProfile } from "../../commands";
+import { usePlatform } from "../../hooks/usePlatform";
+import { runProfile, runItem } from "../../commands";
 import { Button } from "../common/Button";
 import { ItemRow } from "../ItemRow/ItemRow";
 import { AddItemDialog } from "../AddItemDialog/AddItemDialog";
 import { OpenWithPicker } from "../OpenWithPicker/OpenWithPicker";
-import type { LaunchItem, ItemType, AppInfo } from "../../types";
+import type { LaunchItem, ItemType, AppInfo, LaunchMode } from "../../types";
 
 export function ProfileDetail() {
   const { selectedProfile, dispatch } = useProfiles();
   const { t } = useTranslation();
+  const { platform } = usePlatform();
 
   const [isRunning, setIsRunning] = useState(false);
+  const [runProgress, setRunProgress] = useState<{ current: number; total: number } | null>(null);
+  const cancelRef = useRef(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editItem, setEditItem] = useState<LaunchItem | null>(null);
   const [showOpenWithPicker, setShowOpenWithPicker] = useState(false);
@@ -50,16 +54,78 @@ export function ProfileDetail() {
     [profile, dispatch]
   );
 
+  const handleLaunchModeChange = useCallback(
+    (mode: LaunchMode) => {
+      if (!profile) return;
+      dispatch({ type: "UPDATE_PROFILE", profile: { ...profile, launchMode: mode } });
+    },
+    [profile, dispatch]
+  );
+
+  const handleDelayChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!profile) return;
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        dispatch({ type: "UPDATE_PROFILE", profile: { ...profile, delaySeconds: val } });
+      }
+    },
+    [profile, dispatch]
+  );
+
   const handleRun = async () => {
     if (!profile) return;
+    cancelRef.current = false;
     setIsRunning(true);
-    try {
-      await runProfile(profile.id);
-    } catch (err) {
-      console.error("Run failed:", err);
-    } finally {
-      setIsRunning(false);
+
+    if (profile.launchMode === "sequential") {
+      // Sequential mode: open items one by one from the frontend
+      const matchingItems = profile.items.filter(
+        (item) => item.platform === "both" || item.platform === platform
+      );
+      setRunProgress({ current: 0, total: matchingItems.length });
+
+      for (let i = 0; i < matchingItems.length; i++) {
+        if (cancelRef.current) break;
+        const item = matchingItems[i];
+        setRunProgress({ current: i + 1, total: matchingItems.length });
+        try {
+          await runItem(item.path, item.openWith);
+        } catch (err) {
+          console.error(`Failed to open ${item.label}:`, err);
+        }
+        // Apply delay between items (not after the last one)
+        if (i < matchingItems.length - 1 && !cancelRef.current && profile.delaySeconds > 0) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(resolve, profile.delaySeconds * 1000);
+            // Check cancel periodically during delay
+            const checkCancel = setInterval(() => {
+              if (cancelRef.current) {
+                clearTimeout(timer);
+                clearInterval(checkCancel);
+                resolve();
+              }
+            }, 100);
+            // Clean up interval when timer fires naturally
+            setTimeout(() => clearInterval(checkCancel), profile.delaySeconds * 1000 + 50);
+          });
+        }
+      }
+      setRunProgress(null);
+    } else {
+      // Parallel mode: use existing run_profile command
+      try {
+        await runProfile(profile.id);
+      } catch (err) {
+        console.error("Run failed:", err);
+      }
     }
+
+    setIsRunning(false);
+  };
+
+  const handleStop = () => {
+    cancelRef.current = true;
   };
 
   const handleQuickAdd = async (type: ItemType) => {
@@ -126,8 +192,12 @@ export function ProfileDetail() {
 
   if (!profile) return null;
 
+  const launchMode = profile.launchMode || "parallel";
+  const delaySeconds = profile.delaySeconds ?? 1;
+
   return (
     <div className="flex flex-col h-full px-6 py-5 gap-4">
+      {/* Header: name + run/stop buttons */}
       <div className="flex items-center gap-4">
         <input
           className="flex-1 text-[20px] font-semibold bg-transparent py-1 outline-none transition-colors"
@@ -142,11 +212,93 @@ export function ProfileDetail() {
           onBlur={(e) => { e.currentTarget.style.borderBottomColor = "transparent"; }}
           placeholder={t("profile.namePlaceholder")}
         />
-        <Button variant="primary" onClick={handleRun} disabled={isRunning || profile.items.length === 0}>
-          {isRunning ? t("profile.running") : `\u25B6 ${t("profile.run")}`}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="primary" onClick={handleRun} disabled={isRunning || profile.items.length === 0}>
+            {isRunning && runProgress
+              ? `${runProgress.current}/${runProgress.total}`
+              : isRunning
+                ? t("profile.running")
+                : `\u25B6 ${t("profile.run")}`}
+          </Button>
+          {isRunning && (
+            <Button
+              variant="danger"
+              onClick={handleStop}
+              title={t("profile.stop")}
+              style={{ padding: "6px 10px" }}
+            >
+              <Square size={14} fill="currentColor" />
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* Launch mode settings */}
+      <div
+        className="flex items-center gap-3 px-3 py-[8px] rounded-[var(--radius-md)] flex-wrap"
+        style={{
+          background: "var(--color-bg)",
+          border: "1px solid var(--color-border)",
+        }}
+      >
+        <span className="text-[12px] font-medium" style={{ color: "var(--color-text-secondary)" }}>
+          {t("profile.launchMode")}:
+        </span>
+        <div className="flex rounded-[var(--radius-sm)] overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
+          <button
+            className="px-[10px] py-[3px] text-[12px] font-medium transition-colors cursor-pointer"
+            style={{
+              background: launchMode === "parallel" ? "var(--color-primary)" : "var(--color-bg-secondary)",
+              color: launchMode === "parallel" ? "white" : "var(--color-text-secondary)",
+              border: "none",
+            }}
+            onClick={() => handleLaunchModeChange("parallel")}
+          >
+            {t("profile.parallel")}
+          </button>
+          <button
+            className="px-[10px] py-[3px] text-[12px] font-medium transition-colors cursor-pointer"
+            style={{
+              background: launchMode === "sequential" ? "var(--color-primary)" : "var(--color-bg-secondary)",
+              color: launchMode === "sequential" ? "white" : "var(--color-text-secondary)",
+              border: "none",
+              borderLeft: "1px solid var(--color-border)",
+            }}
+            onClick={() => handleLaunchModeChange("sequential")}
+          >
+            {t("profile.sequential")}
+          </button>
+        </div>
+
+        {launchMode === "sequential" && (
+          <div className="flex items-center gap-[6px]">
+            <span className="text-[12px]" style={{ color: "var(--color-text-secondary)" }}>
+              {t("profile.delay")}:
+            </span>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              step="0.5"
+              value={delaySeconds}
+              onChange={handleDelayChange}
+              className="w-[60px] text-[12px] text-center outline-none"
+              style={{
+                padding: "3px 6px",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                background: "var(--color-bg-secondary)",
+                color: "var(--color-text)",
+              }}
+            />
+            <span className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+              {t("profile.delayUnit")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Quick add buttons */}
       <div className="flex gap-2">
         <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("app")}><MonitorPlay size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("item.addApp")}</Button>
         <Button variant="secondary" size="sm" onClick={() => handleQuickAdd("file")}><FileText size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("item.addFile")}</Button>

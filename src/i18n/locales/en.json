@@ -58,6 +58,7 @@
   "picker.browse": "Browse...",
   "picker.loading": "Loading apps...",
   "picker.empty": "No apps found",
+  "picker.hint": "Choose an app to open this file/folder with, or select \"System Default\" to use your system's default app. Press Cancel to skip and use the default.",
   "language": "Language",
   "settings.title": "Settings",
   "settings.general": "General",
@@ -73,5 +74,11 @@
   "update.title": "Update Available",
   "update.available": "Version {version} is available. Would you like to update and restart?",
   "settings.about": "About",
-  "settings.version": "Version"
+  "settings.version": "Version",
+  "profile.launchMode": "Launch mode",
+  "profile.parallel": "Parallel",
+  "profile.sequential": "Sequential",
+  "profile.delay": "Delay",
+  "profile.delayUnit": "sec",
+  "profile.stop": "Stop"
 }

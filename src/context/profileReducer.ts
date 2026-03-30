@@ -33,7 +33,11 @@ export function profileReducer(
 ): LaunchProfile[] {
   switch (action.type) {
     case "SET_PROFILES":
-      return action.profiles;
+      return action.profiles.map((p) => ({
+        ...p,
+        launchMode: p.launchMode || "sequential",
+        delaySeconds: p.delaySeconds ?? 2,
+      }));
 
     case "ADD_PROFILE":
       return [...state, action.profile];

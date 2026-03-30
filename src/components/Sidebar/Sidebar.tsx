@@ -134,7 +134,7 @@ export function Sidebar() {
 
   const handleNewProfile = () => {
     const id = nanoid();
-    dispatch({ type: "ADD_PROFILE", profile: { id, name: t("profile.untitled"), items: [] } });
+    dispatch({ type: "ADD_PROFILE", profile: { id, name: t("profile.untitled"), items: [], launchMode: "sequential", delaySeconds: 2 } });
     selectProfile(id);
   };
 

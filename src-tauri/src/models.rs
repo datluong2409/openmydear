@@ -42,11 +42,32 @@ pub struct LaunchItem {
     pub open_with_icon: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LaunchMode {
+    Parallel,
+    Sequential,
+}
+
+impl Default for LaunchMode {
+    fn default() -> Self {
+        LaunchMode::Sequential
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LaunchProfile {
     pub id: String,
     pub name: String,
     pub items: Vec<LaunchItem>,
+    #[serde(rename = "launchMode", default)]
+    pub launch_mode: LaunchMode,
+    #[serde(rename = "delaySeconds", default = "default_delay")]
+    pub delay_seconds: f64,
+}
+
+fn default_delay() -> f64 {
+    2.0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

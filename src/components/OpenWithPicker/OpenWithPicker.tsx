@@ -48,6 +48,15 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openW
   return (
     <Modal open={isOpen} onClose={onCancel} title={mode === "addApp" ? t("picker.titleAddApp") : t("picker.title")}>
       <div className="flex flex-col gap-3" style={{ minWidth: 380 }}>
+        {/* Hint for user */}
+        {mode === "openWith" && (
+          <div
+            className="text-[12px] leading-relaxed px-1"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            {t("picker.hint")}
+          </div>
+        )}
         <input
           className="w-full text-[13px] outline-none transition-colors"
           style={{

@@ -14,10 +14,11 @@
       {
         "title": "OpenMyDear",
         "width": 900,
-        "height": 600,
+        "height": 650,
         "minWidth": 700,
         "minHeight": 450,
-        "center": true
+        "center": true,
+        "alwaysOnTop": true
       }
     ],
     "security": {

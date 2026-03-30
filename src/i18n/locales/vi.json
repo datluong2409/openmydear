@@ -58,6 +58,7 @@
   "picker.browse": "Duyệt...",
   "picker.loading": "Đang tải...",
   "picker.empty": "Không tìm thấy ứng dụng",
+  "picker.hint": "Chọn ứng dụng để mở tệp/thư mục này, hoặc chọn \"Mặc định hệ thống\" để dùng ứng dụng mặc định. Nhấn Hủy để bỏ qua và dùng mặc định.",
   "language": "Ngôn ngữ",
   "settings.title": "Cài đặt",
   "settings.general": "Chung",
@@ -73,5 +74,11 @@
   "update.title": "Có bản cập nhật",
   "update.available": "Phiên bản {version} đã sẵn sàng. Bạn có muốn cập nhật và khởi động lại không?",
   "settings.about": "Giới thiệu",
-  "settings.version": "Phiên bản"
+  "settings.version": "Phiên bản",
+  "profile.launchMode": "Chế độ mở",
+  "profile.parallel": "Song song",
+  "profile.sequential": "Tuần tự",
+  "profile.delay": "Độ trễ",
+  "profile.delayUnit": "giây",
+  "profile.stop": "Dừng"
 }

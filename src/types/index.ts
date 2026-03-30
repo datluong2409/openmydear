@@ -1,5 +1,6 @@
 export type Platform = "macos" | "windows" | "both";
 export type ItemType = "app" | "file" | "folder";
+export type LaunchMode = "parallel" | "sequential";
 
 export interface LaunchItem {
   id: string;
@@ -17,6 +18,8 @@ export interface LaunchProfile {
   id: string;
   name: string;
   items: LaunchItem[];
+  launchMode: LaunchMode;
+  delaySeconds: number;
 }
 
 export interface ItemError {

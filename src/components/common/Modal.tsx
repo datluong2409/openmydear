@@ -34,7 +34,7 @@ export function Modal({ open, onClose, onConfirm, title, children }: ModalProps)
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div
-        className="w-[90%] max-w-[460px] max-h-[80vh] overflow-auto rounded-[var(--radius-lg)] animate-[slideUp_0.15s_ease]"
+        className="w-[90%] max-w-[460px] max-h-[85vh] overflow-auto rounded-[var(--radius-lg)] animate-[slideUp_0.15s_ease]"
         style={{
           background: "var(--color-bg-secondary)",
           boxShadow: "var(--shadow-md)",
