@@ -396,12 +396,10 @@ fn list_installed_apps() -> Vec<AppInfo> {
                 if path.extension().map_or(false, |ext| ext == "app") {
                     if let Some(name) = path.file_stem().map(|s| s.to_string_lossy().to_string()) {
                         if !name.is_empty() {
-                            let path_str = path.to_string_lossy().to_string();
-                            let icon = extract_icon_macos(&path_str);
                             apps.push(AppInfo {
                                 name,
-                                path: path_str,
-                                icon,
+                                path: path.to_string_lossy().to_string(),
+                                icon: None,
                             });
                         }
                     }
@@ -410,83 +408,65 @@ fn list_installed_apps() -> Vec<AppInfo> {
         }
     }
     apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    extract_icons_macos(&mut apps);
     apps
 }
 
 #[cfg(target_os = "macos")]
-fn extract_icon_macos(app_path: &str) -> Option<String> {
-    let plist_path = format!("{}/Contents/Info.plist", app_path);
-
-    // Read icon filename from Info.plist
-    let plist_out = Command::new("/usr/libexec/PlistBuddy")
-        .args(["-c", "Print CFBundleIconFile", &plist_path])
-        .output()
-        .ok()?;
-
-    if !plist_out.status.success() {
-        return None;
+fn extract_icons_macos(apps: &mut Vec<AppInfo>) {
+    if apps.is_empty() {
+        return;
     }
 
-    let icon_name = String::from_utf8_lossy(&plist_out.stdout)
-        .trim()
-        .to_string();
-    if icon_name.is_empty() {
-        return None;
+    // Single bash call processes all apps: reads Info.plist, converts icns→png via sips,
+    // encodes base64, outputs "PATH\tBASE64" per line.
+    // Paths are passed as positional args ($@) to avoid shell injection.
+    const SCRIPT: &str = r#"
+for app_path in "$@"; do
+    plist="$app_path/Contents/Info.plist"
+    icon_name=$(/usr/libexec/PlistBuddy -c "Print CFBundleIconFile" "$plist" 2>/dev/null)
+    [ -z "$icon_name" ] && continue
+    case "$icon_name" in *.icns) ;; *) icon_name="${icon_name}.icns" ;; esac
+    icns="$app_path/Contents/Resources/$icon_name"
+    [ ! -f "$icns" ] && continue
+    tmp=$(mktemp /tmp/omd_XXXXXX.png)
+    sips -s format png -Z 32 "$icns" --out "$tmp" >/dev/null 2>&1
+    if [ -s "$tmp" ]; then
+        printf '%s\t%s\n' "$app_path" "$(base64 -i "$tmp")"
+    fi
+    rm -f "$tmp"
+done
+"#;
+
+    let mut cmd = Command::new("bash");
+    cmd.args(["-c", SCRIPT, "--"]);
+    for app in apps.iter() {
+        cmd.arg(&app.path);
     }
 
-    let icon_file = if icon_name.ends_with(".icns") {
-        icon_name
-    } else {
-        format!("{}.icns", icon_name)
+    let output = match cmd.output() {
+        Ok(o) => o,
+        Err(_) => return,
     };
 
-    let icns_path = format!("{}/Contents/Resources/{}", app_path, icon_file);
-    if !std::path::Path::new(&icns_path).exists() {
-        return None;
-    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut icon_map: std::collections::HashMap<String, String> =
+        std::collections::HashMap::new();
 
-    // Convert icns -> 32x32 PNG via sips, pipe directly to stdout
-    let sips_out = Command::new("sips")
-        .args([
-            "-s", "format", "png",
-            "-Z", "32",
-            &icns_path,
-            "--out", "/dev/stdout",
-        ])
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()?;
-
-    if sips_out.stdout.is_empty() {
-        return None;
-    }
-
-    Some(base64_encode(&sips_out.stdout))
-}
-
-#[cfg(target_os = "macos")]
-fn base64_encode(data: &[u8]) -> String {
-    const A: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0] as usize;
-        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
-        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
-        let n = (b0 << 16) | (b1 << 8) | b2;
-        out.push(A[(n >> 18) & 0x3f] as char);
-        out.push(A[(n >> 12) & 0x3f] as char);
-        if chunk.len() > 1 {
-            out.push(A[(n >> 6) & 0x3f] as char);
-        } else {
-            out.push('=');
-        }
-        if chunk.len() > 2 {
-            out.push(A[n & 0x3f] as char);
-        } else {
-            out.push('=');
+    for line in stdout.lines() {
+        let mut parts = line.splitn(2, '\t');
+        if let (Some(path), Some(b64)) = (parts.next(), parts.next()) {
+            if !b64.is_empty() {
+                icon_map.insert(path.to_string(), b64.to_string());
+            }
         }
     }
-    out
+
+    for app in apps.iter_mut() {
+        if let Some(icon) = icon_map.get(&app.path) {
+            app.icon = Some(icon.clone());
+        }
+    }
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]

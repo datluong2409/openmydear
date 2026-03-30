@@ -44,7 +44,7 @@ export function AddItemDialog({ open: isOpen, onClose, onSave, editItem }: AddIt
       const filters =
         !pickDirectory && itemType === "app" && !isMacos
           ? [{ name: "Applications", extensions: ["exe", "lnk"] }]
-          : itemType === "file" ? [{ name: "All Files", extensions: ["*"] }] : undefined;
+          : undefined;
       const selected = await open({ directory: pickDirectory, multiple: false, title: pickDirectory ? t("item.addFolder") : t("item.addFile"), filters });
       if (selected) {
         const selectedPath = selected as string;
