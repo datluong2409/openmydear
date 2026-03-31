@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { I18nProvider } from "./i18n/I18nContext";
 import { ProfileProvider } from "./context/ProfileContext";
+import { InstalledAppsProvider } from "./context/InstalledAppsContext";
 import { useProfiles } from "./hooks/useProfiles";
 import { useUpdateChecker } from "./hooks/useUpdateChecker";
 import { getAlwaysOnTop } from "./commands";
@@ -32,9 +33,11 @@ function MainContent() {
 function App() {
   return (
     <I18nProvider>
-      <ProfileProvider>
-        <MainContent />
-      </ProfileProvider>
+      <InstalledAppsProvider>
+        <ProfileProvider>
+          <MainContent />
+        </ProfileProvider>
+      </InstalledAppsProvider>
     </I18nProvider>
   );
 }

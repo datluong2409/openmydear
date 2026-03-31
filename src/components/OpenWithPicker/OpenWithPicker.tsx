@@ -2,10 +2,27 @@ import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n/useTranslation";
 import { usePlatform } from "../../hooks/usePlatform";
-import { getInstalledApps } from "../../commands";
+import { useInstalledApps } from "../../hooks/useInstalledApps";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
 import type { AppInfo } from "../../types";
+
+function getInitials(name: string): string {
+  // Split on spaces, hyphens, underscores, dots, and camelCase/PascalCase boundaries
+  const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s\-_.]+/);
+  return words.map((w) => w.charAt(0)).join("").toLowerCase();
+}
+
+function matchApp(name: string, query: string): boolean {
+  const lowerName = name.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  // 1. Substring match (existing behavior)
+  if (lowerName.includes(lowerQuery)) return true;
+  // 2. Initials/acronym match — "VS" matches "Visual Studio Code"
+  const initials = getInitials(name);
+  if (initials.includes(lowerQuery)) return true;
+  return false;
+}
 
 interface OpenWithPickerProps {
   open: boolean;
@@ -17,20 +34,17 @@ interface OpenWithPickerProps {
 export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openWith" }: OpenWithPickerProps) {
   const { t } = useTranslation();
   const { isMacos } = usePlatform();
-  const [apps, setApps] = useState<AppInfo[]>([]);
+  const { apps, loading } = useInstalledApps();
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) { setSearch(""); return; }
-    setLoading(true);
-    getInstalledApps().then(setApps).catch(() => setApps([])).finally(() => setLoading(false));
+    if (!isOpen) { setSearch(""); }
   }, [isOpen]);
 
   const filtered = search
-    ? apps.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+    ? apps.filter((a) => matchApp(a.name, search))
     : apps;
 
   const handleBrowse = async () => {
