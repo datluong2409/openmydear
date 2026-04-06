@@ -34,7 +34,7 @@ interface OpenWithPickerProps {
 export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openWith" }: OpenWithPickerProps) {
   const { t } = useTranslation();
   const { isMacos } = usePlatform();
-  const { apps, loading } = useInstalledApps();
+  const { apps, loading, ensureLoaded } = useInstalledApps();
   const [search, setSearch] = useState("");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
@@ -42,6 +42,12 @@ export function OpenWithPicker({ open: isOpen, onSelect, onCancel, mode = "openW
   useEffect(() => {
     if (!isOpen) { setSearch(""); }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      ensureLoaded();
+    }
+  }, [isOpen, ensureLoaded]);
 
   const filtered = search
     ? apps.filter((a) => matchApp(a.name, search))
