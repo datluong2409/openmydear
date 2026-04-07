@@ -202,13 +202,13 @@ export function ProfileDetail() {
           className="flex-1 text-[20px] font-semibold bg-transparent py-1 outline-none transition-colors"
           style={{
             border: "none",
-            borderBottom: "2px solid transparent",
+            borderBottom: "2px solid var(--color-border)",
             color: "var(--color-text)",
           }}
           value={profile.name}
           onChange={handleNameChange}
           onFocus={(e) => { e.currentTarget.style.borderBottomColor = "var(--color-primary)"; }}
-          onBlur={(e) => { e.currentTarget.style.borderBottomColor = "transparent"; }}
+          onBlur={(e) => { e.currentTarget.style.borderBottomColor = "var(--color-border)"; }}
           placeholder={t("profile.namePlaceholder")}
         />
         <div className="flex items-center gap-2">
