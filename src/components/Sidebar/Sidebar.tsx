@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { nanoid } from "nanoid";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowDownToLine, Loader2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useProfiles } from "../../hooks/useProfiles";
 import { useTranslation } from "../../i18n/useTranslation";
+import { useUpdateChecker } from "../../hooks/useUpdateChecker";
 import { Button } from "../common/Button";
 import { Modal } from "../common/Modal";
 import { Settings } from "../Settings/Settings";
@@ -121,6 +122,7 @@ export function Sidebar() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCoffee, setShowCoffee] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const { hasUpdate, updateVersion, isUpdating, installUpdate } = useUpdateChecker();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -200,9 +202,35 @@ export function Sidebar() {
         )}
       </div>
 
+      {hasUpdate && (
+        <div className="px-3 pt-[10px]" style={{ borderTop: "1px solid var(--color-border)" }}>
+          <button
+            className="w-full flex items-center justify-center gap-[6px] h-[34px] rounded-[var(--radius-md)] text-[12px] font-semibold cursor-pointer transition-opacity disabled:cursor-default"
+            style={{ background: "var(--color-primary)", color: "white", opacity: isUpdating ? 0.7 : 1 }}
+            onMouseEnter={(e) => { if (!isUpdating) e.currentTarget.style.opacity = "0.9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = isUpdating ? "0.7" : "1"; }}
+            onClick={installUpdate}
+            disabled={isUpdating}
+            title={t("update.button", { version: updateVersion ?? "" })}
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>{t("update.updating")}</span>
+              </>
+            ) : (
+              <>
+                <ArrowDownToLine size={14} />
+                <span>{t("update.button", { version: updateVersion ?? "" })}</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       <div
         className="px-3 py-[10px] flex items-center justify-between"
-        style={{ borderTop: "1px solid var(--color-border)" }}
+        style={{ borderTop: hasUpdate ? undefined : "1px solid var(--color-border)" }}
       >
         <button
           className="w-[30px] h-[30px] flex items-center justify-center rounded-[var(--radius-sm)] text-[16px] cursor-pointer transition-colors shrink-0"

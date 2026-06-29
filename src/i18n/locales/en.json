@@ -76,6 +76,8 @@
   "settings.storageMoveFailed": "Failed to move storage",
   "update.title": "Update Available",
   "update.available": "Version {version} is available. Would you like to update and restart?",
+  "update.button": "Update to v{version}",
+  "update.updating": "Updating...",
   "settings.about": "About",
   "settings.version": "Version",
   "profile.launchMode": "Launch mode",

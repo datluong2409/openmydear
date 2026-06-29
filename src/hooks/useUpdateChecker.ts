@@ -1,28 +1,19 @@
-import { useEffect } from "react";
-import { check } from "@tauri-apps/plugin-updater";
+import { useEffect, useState, useCallback } from "react";
+import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { ask } from "@tauri-apps/plugin-dialog";
-import { useTranslation } from "../i18n/useTranslation";
 
 export function useUpdateChecker() {
-  const { t } = useTranslation();
+  const [update, setUpdate] = useState<Update | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function checkForUpdates() {
       try {
-        const update = await check();
-        if (cancelled || !update) return;
-
-        const yes = await ask(
-          t("update.available", { version: update.version }),
-          { title: t("update.title"), kind: "info" }
-        );
-        if (!yes) return;
-
-        await update.downloadAndInstall();
-        await relaunch();
+        const result = await check();
+        if (cancelled || !result) return;
+        setUpdate(result);
       } catch (e) {
         console.error("Update check failed:", e);
       }
@@ -33,5 +24,24 @@ export function useUpdateChecker() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [t]);
+  }, []);
+
+  const installUpdate = useCallback(async () => {
+    if (!update) return;
+    setIsUpdating(true);
+    try {
+      await update.downloadAndInstall();
+      await relaunch();
+    } catch (e) {
+      console.error("Update install failed:", e);
+      setIsUpdating(false); // relaunch never returns on success
+    }
+  }, [update]);
+
+  return {
+    hasUpdate: update !== null,
+    updateVersion: update?.version ?? null,
+    isUpdating,
+    installUpdate,
+  };
 }
