@@ -1,4 +1,4 @@
-export type Platform = "macos" | "windows" | "both";
+export type Platform = "macos" | "windows" | "linux" | "both";
 export type ItemType = "app" | "file" | "folder";
 export type LaunchMode = "parallel" | "sequential";
 

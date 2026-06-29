@@ -5,7 +5,20 @@ use serde::{Deserialize, Serialize};
 pub enum Platform {
     Macos,
     Windows,
+    Linux,
     Both,
+}
+
+impl Platform {
+    /// Lowercase string form, matching `get_current_platform()` output.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Platform::Macos => "macos",
+            Platform::Windows => "windows",
+            Platform::Linux => "linux",
+            Platform::Both => "both",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

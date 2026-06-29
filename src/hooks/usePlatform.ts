@@ -14,5 +14,6 @@ export function usePlatform() {
     platform,
     isWindows: platform === "windows",
     isMacos: platform === "macos",
+    isLinux: platform === "linux",
   };
 }

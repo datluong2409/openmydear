@@ -11,25 +11,38 @@ fn open_path_with(app: &AppHandle, path: &str, open_with: &Option<String>) -> Re
         return Err(format!("Path does not exist: {}", path));
     }
 
-    if let Some(ref app_path) = open_with {
-        if app_path.is_empty() {
-            let opener = app.opener();
-            opener
-                .open_path(path, None::<&str>)
-                .map_err(|e| format!("Failed to open: {}", e))
-        } else {
+    match open_with {
+        Some(app_path) if !app_path.is_empty() => {
             Command::new(app_path)
                 .arg(path)
                 .spawn()
                 .map_err(|e| format!("Failed to open with {}: {}", app_path, e))?;
             Ok(())
         }
-    } else {
-        let opener = app.opener();
-        opener
-            .open_path(path, None::<&str>)
-            .map_err(|e| format!("Failed to open: {}", e))
+        _ => default_open(app, path),
     }
+}
+
+/// Open a path with the system default handler. On Linux, executable files are
+/// spawned directly — `xdg-open` would only "open" a binary (e.g. in an editor)
+/// rather than launch it; files and folders still go through the opener.
+fn default_open(app: &AppHandle, path: &str) -> Result<(), String> {
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(meta) = std::fs::metadata(path) {
+            if meta.is_file() && meta.permissions().mode() & 0o111 != 0 {
+                return Command::new(path)
+                    .spawn()
+                    .map(|_| ())
+                    .map_err(|e| format!("Failed to launch: {}", e));
+            }
+        }
+    }
+    let opener = app.opener();
+    opener
+        .open_path(path, None::<&str>)
+        .map_err(|e| format!("Failed to open: {}", e))
 }
 
 #[tauri::command]
@@ -65,9 +78,7 @@ pub fn run_profile(app: AppHandle, profile_id: String) -> Result<RunResult, Stri
         .items
         .iter()
         .filter(|item| {
-            item.platform == Platform::Both
-                || (current_platform == "macos" && item.platform == Platform::Macos)
-                || (current_platform == "windows" && item.platform == Platform::Windows)
+            item.platform == Platform::Both || item.platform.as_str() == current_platform
         })
         .collect();
 
@@ -471,13 +482,141 @@ done
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 fn list_installed_apps() -> Vec<AppInfo> {
-    Vec::new()
+    use std::collections::HashSet;
+    use std::path::PathBuf;
+
+    let mut apps = Vec::new();
+    let mut seen = HashSet::new();
+
+    // Standard XDG application directories + Flatpak exports.
+    let mut dirs: Vec<PathBuf> = vec![
+        PathBuf::from("/usr/share/applications"),
+        PathBuf::from("/usr/local/share/applications"),
+        PathBuf::from("/var/lib/flatpak/exports/share/applications"),
+    ];
+    if let Ok(home) = std::env::var("HOME") {
+        dirs.push(PathBuf::from(format!("{}/.local/share/applications", home)));
+        dirs.push(PathBuf::from(format!(
+            "{}/.local/share/flatpak/exports/share/applications",
+            home
+        )));
+    }
+
+    for dir in &dirs {
+        let entries = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "desktop") {
+                if let Some(app) = parse_desktop_file(&path) {
+                    if seen.insert(app.path.to_lowercase()) {
+                        apps.push(app);
+                    }
+                }
+            }
+        }
+    }
+
+    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps
+}
+
+/// Parse a freedesktop `.desktop` entry into an AppInfo whose `path` is the
+/// resolved, absolute executable. Returns None for hidden/non-application
+/// entries or when the binary can't be resolved on $PATH.
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn parse_desktop_file(path: &Path) -> Option<AppInfo> {
+    let content = std::fs::read_to_string(path).ok()?;
+
+    let mut name: Option<String> = None;
+    let mut exec: Option<String> = None;
+    let mut no_display = false;
+    let mut is_application = true;
+    let mut in_entry = false;
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            // Only read the main [Desktop Entry] group, not action groups.
+            in_entry = line == "[Desktop Entry]";
+            continue;
+        }
+        if !in_entry {
+            continue;
+        }
+        // Take the first un-localized key (skip e.g. `Name[fr]=`).
+        if let Some(v) = line.strip_prefix("Name=") {
+            name.get_or_insert_with(|| v.trim().to_string());
+        } else if let Some(v) = line.strip_prefix("Exec=") {
+            exec.get_or_insert_with(|| v.trim().to_string());
+        } else if let Some(v) = line.strip_prefix("NoDisplay=") {
+            no_display = v.trim().eq_ignore_ascii_case("true");
+        } else if let Some(v) = line.strip_prefix("Type=") {
+            is_application = v.trim().eq_ignore_ascii_case("application");
+        }
+    }
+
+    if no_display || !is_application {
+        return None;
+    }
+
+    let name = name?;
+    // First token of Exec is the binary; later tokens / %-field-codes are args.
+    let binary = exec?.split_whitespace().next()?.to_string();
+    let resolved = resolve_in_path(&binary)?;
+
+    Some(AppInfo {
+        name,
+        path: resolved,
+        icon: None,
+    })
+}
+
+/// Resolve a binary name to an absolute path via $PATH; pass through absolute
+/// paths that exist. Returns None if not found.
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn resolve_in_path(binary: &str) -> Option<String> {
+    let p = Path::new(binary);
+    if p.is_absolute() {
+        return if p.exists() {
+            Some(binary.to_string())
+        } else {
+            None
+        };
+    }
+    let path_var = std::env::var("PATH").ok()?;
+    for dir in path_var.split(':') {
+        if dir.is_empty() {
+            continue;
+        }
+        let candidate = Path::new(dir).join(binary);
+        if candidate.exists() {
+            return Some(candidate.to_string_lossy().to_string());
+        }
+    }
+    None
 }
 
 // ── Autostart ──────────────────────────────────────────────────────────────
 
 const AUTOSTART_KEY: &str = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const AUTOSTART_NAME: &str = "OpenMyDear";
+
+/// Path to the XDG autostart `.desktop` entry on Linux/BSD.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn linux_autostart_path() -> Option<std::path::PathBuf> {
+    let config_home = std::env::var("XDG_CONFIG_HOME")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .or_else(|| std::env::var("HOME").ok().map(|h| format!("{}/.config", h)))?;
+    Some(
+        std::path::PathBuf::from(config_home)
+            .join("autostart")
+            .join("OpenMyDear.desktop"),
+    )
+}
 
 #[tauri::command]
 pub fn get_storage_dir(app: AppHandle) -> Result<String, String> {
@@ -512,8 +651,14 @@ pub fn get_autostart() -> bool {
             .map(|o| o.status.success())
             .unwrap_or(false)
     }
-    #[cfg(not(target_os = "windows"))]
-    false
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        linux_autostart_path().map_or(false, |p| p.exists())
+    }
+    #[cfg(not(any(target_os = "windows", all(unix, not(target_os = "macos")))))]
+    {
+        false
+    }
 }
 
 #[tauri::command]
@@ -522,6 +667,7 @@ pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let _ = &app;
 
         if enabled {
             let exe = std::env::current_exe().map_err(|e| e.to_string())?;
@@ -550,9 +696,28 @@ pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
         }
         Ok(())
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
-        let _ = (app, enabled); // not supported on non-Windows
+        let _ = app;
+        let path = linux_autostart_path().ok_or("Cannot resolve autostart directory")?;
+        if enabled {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            let content = format!(
+                "[Desktop Entry]\nType=Application\nName=OpenMyDear\nExec={}\nX-GNOME-Autostart-enabled=true\n",
+                exe.to_string_lossy()
+            );
+            std::fs::write(&path, content).map_err(|e| e.to_string())?;
+        } else if path.exists() {
+            std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "windows", all(unix, not(target_os = "macos")))))]
+    {
+        let _ = (app, enabled); // not supported on this platform
         Ok(())
     }
 }
